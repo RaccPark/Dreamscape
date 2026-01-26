@@ -12,6 +12,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "DSCharacterControlData.h"
+#include "Components/DSCameraPeekComponent.h"
 
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
@@ -36,18 +37,38 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	{
 		JumpAction = InputActionJumpRef.Object;
 	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionPeekRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_CameraPeek.IA_CameraPeek'"));
+	if (InputActionPeekRef.Object)
+	{
+		CameraPeekAction = InputActionPeekRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionMousePositionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_MousePosition.IA_MousePosition'"));
+	if (InputActionMousePositionRef.Object)
+	{
+		MousePosition = InputActionMousePositionRef.Object;
+	}
+
+	// Default Mesh & Animation Setting
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> DefaultSkeletonMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Fab/Free_Animated_Low_Poly_Cartoon_Skeleton/free_animated_low_poly_cartoon_skeleton.free_animated_low_poly_cartoon_skeleton'"));
+	if (DefaultSkeletonMeshRef.Object)
+	{
+		DefaultSkeletonMesh = DefaultSkeletonMeshRef.Object;
+		GetMesh()->SetSkeletalMesh(DefaultSkeletonMesh);
+	}
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 100.0f;
-	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->TargetArmLength = 900.0f;
+	CameraBoom->bUsePawnControlRotation = false;
+	//CameraBoom->SetRelativeLocation(FVector(-200.0f, -200.0f, 400.0f));
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 15.0f));
+	//CameraBoom->SetRelativeRotation(FRotator(0.0f, -40.0f, 45.0f));
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->bEnableCameraRotationLag = true;
-	CameraBoom->CameraLagSpeed = 5.0f;
+	CameraBoom->CameraLagSpeed = 3.0f;
 	CameraBoom->CameraRotationLagSpeed = 20.0f;
 	CameraBoom->CameraLagMaxDistance = 300.f;
 	CameraBoom->ProbeSize = 8.0f;
@@ -56,16 +77,22 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 	FollowCamera->FieldOfView = 90.0f;
+
+	// Camera Peek Component
+	CameraPeekComponent = CreateDefaultSubobject<UDSCameraPeekComponent>(TEXT("CameraPeekComponent"));
 	
 	// Player Movement Settings
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->GravityScale = 1.6f;
-	DefaultMaxWalkSpeed = 100.0f;
-	this->MaxWalkSpeed = DefaultMaxWalkSpeed;										// Setting Default Max Walk Speed
+	DefaultMaxWalkSpeed = 200.0f;
+	this->MaxWalkSpeed = DefaultMaxWalkSpeed;						// Setting Default Max Walk Speed
 	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed;		// Apply Default Max Walk Speed
 	GetCharacterMovement()->MaxStepHeight = 5.0f;
 	GetCharacterMovement()->SetWalkableFloorAngle(50.f);
 
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	bUseControllerRotationYaw = false;
 }
 
 void ADSCharacterPlayer::BeginPlay()
@@ -78,6 +105,7 @@ void ADSCharacterPlayer::BeginPlay()
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
 
+	SetCharacterControl(ECharacterControlType::Quarter);
 }
 
 void ADSCharacterPlayer::Tick(float DeltaTime)
@@ -96,7 +124,11 @@ void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	// Move
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::Move);
 	// Look
-	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::Look);
+	//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::Look);
+	// Camera Peek
+	EnhancedInputComponent->BindAction(CameraPeekAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::OnPeekStarted);
+	EnhancedInputComponent->BindAction(CameraPeekAction, ETriggerEvent::Completed, this, &ADSCharacterPlayer::OnPeekEnded);
+	EnhancedInputComponent->BindAction(MousePosition, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::OnMouseInput);
 }
 
 void ADSCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
@@ -125,6 +157,7 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 	Super::SetCharacterControlData(CharacterControlData);
 
 	CameraBoom->TargetArmLength = CharacterControlData->TargetArmLength;
+	//CameraBoom->SetRelativeLocation(CharacterControlData->RelativeLocation);
 	CameraBoom->SetRelativeRotation(CharacterControlData->RelativeRotation);
 	CameraBoom->bUsePawnControlRotation = CharacterControlData->bUsePawnControlRotation;
 	CameraBoom->bInheritPitch = CharacterControlData->bInheritPitch;
@@ -135,6 +168,30 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 
 void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 {
+	/*
+	FVector2D MovementVector = Value.Get<FVector2D>();
+	if (MovementVector.IsNearlyZero()) return;
+
+	const FVector Forward = FVector(1.f, 1.f, 0.f).GetSafeNormal();
+	const FVector Right = FVector(-1.f, 1.f, 0.f).GetSafeNormal();
+
+	AddMovementInput(Forward, MovementVector.X);
+	AddMovementInput(Right, MovementVector.Y);
+
+	// Rotation
+	FVector MoveDirection = Forward * MovementVector.X + Right * MovementVector.Y;
+
+	if (!MoveDirection.IsNearlyZero())
+	{
+		MoveDirection.Normalize();
+		FRotator TargetRotation = MoveDirection.Rotation();
+
+		FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 10.0f);
+
+		SetActorRotation(NewRotation);
+	}
+	*/
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -145,6 +202,25 @@ void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
+
+	// Rotation
+	if (!MovementVector.IsNearlyZero())
+	{
+		FVector MoveDirection = (ForwardDirection * MovementVector.X) + (RightDirection * MovementVector.Y);
+		MoveDirection.Z = 0.f;
+
+		FRotator TargetRotation = MoveDirection.Rotation();
+		FRotator CurrentRotation = GetActorRotation();
+
+		FRotator NewRotation = FMath::RInterpTo(
+			CurrentRotation,
+			TargetRotation,
+			GetWorld()->GetDeltaSeconds(),
+			TurnInterpSpeed
+		);
+
+		SetActorRotation(NewRotation);
+	}
 }
 
 void ADSCharacterPlayer::Look(const FInputActionValue& Value)
@@ -163,4 +239,31 @@ void ADSCharacterPlayer::Look(const FInputActionValue& Value)
 
 	AddControllerYawInput(LookAxisVector.X);
 	AddControllerPitchInput(LookAxisVector.Y);
+}
+
+void ADSCharacterPlayer::OnPeekStarted(const FInputActionValue& Value)
+{
+	if (CameraPeekComponent)
+	{
+		CameraPeekComponent->SetPeekActive(true);
+	}
+}
+
+void ADSCharacterPlayer::OnPeekEnded(const FInputActionValue& Value)
+{
+	if (CameraPeekComponent)
+	{
+		CameraPeekComponent->SetPeekActive(false);
+	}
+}
+
+void ADSCharacterPlayer::OnMouseInput(const FInputActionValue& Value)
+{
+	if (!CameraPeekComponent)
+	{
+		return;
+	}
+
+	const FVector2D MouseDelta = Value.Get<FVector2D>();
+	CameraPeekComponent->AddMouseDelta(MouseDelta);
 }
