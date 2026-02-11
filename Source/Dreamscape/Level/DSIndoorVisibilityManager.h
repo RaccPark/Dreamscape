@@ -20,15 +20,36 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	void OnLevelLoaded();
+
 	UPROPERTY(VisibleAnywhere, Category = "Sub Level")
 	FName OutdoorMeshTag;
 
 	UPROPERTY(VisibleAnywhere, Category = "Sub Level")
 	FName IndoorMeshTag;
 
+	UPROPERTY(EditAnywhere)
+	float TransitionDuration;
+
 private:
+	UPROPERTY()
+	TArray<class UMaterialInstanceDynamic*> IndoorMIDs;
+	UPROPERTY()
+	TArray<class UMaterialInstanceDynamic*> OutdoorMIDs;
+
+	FTimerHandle TransitionTimerHandle;
+
+	float CurrentAlpha;
+	float TargetAlpha;
+
 	void ApplyVisibility(EDSPlaceType State);
 
+	UFUNCTION()
+	void StartTransition(EDSPlaceType State);
+	void UpdateTransition();
+	void ApplyFade(float Alpha);
+
+	void CacheMIDs();
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
