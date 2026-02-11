@@ -42,14 +42,15 @@ private:
 	float CurrentAlpha;
 	float TargetAlpha;
 
-	void ApplyVisibility(EDSPlaceType State);
-
 	UFUNCTION()
 	void StartTransition(EDSPlaceType State);
 	void UpdateTransition();
 	void ApplyFade(float Alpha);
 
 	void CacheMIDs();
+
+	// Legacy Function - Directly apply visibility without transition
+	void ApplyVisibility(EDSPlaceType State);
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

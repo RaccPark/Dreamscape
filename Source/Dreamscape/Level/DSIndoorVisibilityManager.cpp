@@ -159,6 +159,8 @@ void ADSIndoorVisibilityManager::CacheMIDs()
 	}
 }
 
+// Legacy Function - Directly apply visibility without transition
+// Don't use this
 void ADSIndoorVisibilityManager::ApplyVisibility(EDSPlaceType State)
 {
 	const bool bIsIndoor = (State == EDSPlaceType::EPT_Indoor);
