@@ -6,4 +6,5 @@
 UDSCharacterControlData::UDSCharacterControlData()
 {
 	TargetArmLength = 400.f;
+	FOV = 90.0f;
 }

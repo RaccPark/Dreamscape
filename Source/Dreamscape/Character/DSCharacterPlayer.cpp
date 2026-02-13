@@ -58,14 +58,17 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 
+	// Initialize Character Control Data
+	// After Startup, you can edit these data assets in the editor
+	// Here is just setting default data assets
+	
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 900.0f;
 	CameraBoom->bUsePawnControlRotation = false;
-	//CameraBoom->SetRelativeLocation(FVector(-200.0f, -200.0f, 400.0f));
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 15.0f));
-	//CameraBoom->SetRelativeRotation(FRotator(0.0f, -40.0f, 45.0f));
+	//CameraBoom->SetRelativeRotation(FRotator(0.0f, -40.0f, 45.0f));	// Don't use
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->bEnableCameraRotationLag = true;
 	CameraBoom->CameraLagSpeed = 3.0f;
@@ -84,7 +87,7 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	// Player Movement Settings
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->GravityScale = 1.6f;
-	DefaultMaxWalkSpeed = 200.0f;
+	DefaultMaxWalkSpeed = 225.0f;
 	this->MaxWalkSpeed = DefaultMaxWalkSpeed;						// Setting Default Max Walk Speed
 	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed;		// Apply Default Max Walk Speed
 	GetCharacterMovement()->MaxStepHeight = 5.0f;
@@ -164,6 +167,8 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 	CameraBoom->bInheritYaw = CharacterControlData->bInheritYaw;
 	CameraBoom->bInheritRoll = CharacterControlData->bInheritRoll;
 	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
+
+	FollowCamera->FieldOfView = CharacterControlData->FOV;
 }
 
 void ADSCharacterPlayer::Move(const FInputActionValue& Value)
