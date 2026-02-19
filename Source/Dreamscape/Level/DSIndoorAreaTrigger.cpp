@@ -17,7 +17,6 @@ ADSIndoorAreaTrigger::ADSIndoorAreaTrigger()
 
 	TriggerBox->SetCollisionProfileName(TEXT("Trigger"));
 	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADSIndoorAreaTrigger::OnOverlapBegin);
-	TriggerBox->OnComponentEndOverlap.AddDynamic(this, &ADSIndoorAreaTrigger::OnOverlapEnd);
 }
 
 // Called when the game starts or when spawned
@@ -29,33 +28,23 @@ void ADSIndoorAreaTrigger::BeginPlay()
 
 void ADSIndoorAreaTrigger::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-
 	if(!OtherActor || !OtherActor->ActorHasTag("Player"))
 	{
 		return;
 	}
 
-	if (UDSIndoorStateSubsystem* IndoorStateSubsystem = GetGameInstance()->GetSubsystem<UDSIndoorStateSubsystem>())
+	if (!RoomTag.IsValid())
 	{
-		IndoorStateSubsystem->SetAreaState(EDSPlaceType::EPT_Indoor);
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("ADSIndoorAreaTrigger::OnOverlapBegin"));
-}
-
-void ADSIndoorAreaTrigger::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (!OtherActor || !OtherActor->ActorHasTag("Player"))
-	{
+		UE_LOG(LogTemp, Warning, TEXT("RoomTag not set on %s"), *GetName());
 		return;
 	}
 
 	if (UDSIndoorStateSubsystem* IndoorStateSubsystem = GetGameInstance()->GetSubsystem<UDSIndoorStateSubsystem>())
 	{
-		IndoorStateSubsystem->SetAreaState(EDSPlaceType::EPT_Outdoor);
+		IndoorStateSubsystem->SetCurrentRoom(RoomTag);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("ADSIndoorAreaTrigger::OnOverlapEnd"));
+	UE_LOG(LogTemp, Warning, TEXT("Entered Room: %s"), *RoomTag.ToString());
 }
 
 // Called every frame

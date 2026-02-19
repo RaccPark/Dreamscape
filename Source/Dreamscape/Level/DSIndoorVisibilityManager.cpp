@@ -6,8 +6,7 @@
 #include "Components/MeshComponent.h"
 #include "../Subsystem/DSIndoorStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
-
-
+#include "GameplayTagAssetInterface.h"
 
 // Sets default values
 ADSIndoorVisibilityManager::ADSIndoorVisibilityManager()
@@ -15,12 +14,7 @@ ADSIndoorVisibilityManager::ADSIndoorVisibilityManager()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	OutdoorMeshTag = "Outdoor";
-	IndoorMeshTag = "Indoor";
-
 	TransitionDuration = 0.50f;
-	CurrentAlpha = 0.0f;
-	TargetAlpha = 0.0f;
 }
 
 // Called when the game starts or when spawned
@@ -30,23 +24,34 @@ void ADSIndoorVisibilityManager::BeginPlay()
 
 	CacheMIDs();
 
-	UDSIndoorStateSubsystem* IndoorStateSubsystem = GetGameInstance()->GetSubsystem<UDSIndoorStateSubsystem>();
-	if (IndoorStateSubsystem)
+	for (const auto& Pair : RoomMIDs)
 	{
-		IndoorStateSubsystem->OnAreaStateChanged.AddUObject(this, &ADSIndoorVisibilityManager::StartTransition);
-
-		// Apply initial visibility based on current state
-		StartTransition(IndoorStateSubsystem->GetAreaState());
+		CurrentRoomAlpha.Add(Pair.Key, 0.0f);
+		TargetRoomAlpha.Add(Pair.Key, 0.0f);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Indoor MID Count: %d"), IndoorMIDs.Num());
-	UE_LOG(LogTemp, Warning, TEXT("Outdoor MID Count: %d"), OutdoorMIDs.Num());
+	if (UDSIndoorStateSubsystem* IndoorSubsystem = GetGameInstance()->GetSubsystem<UDSIndoorStateSubsystem>())
+	{
+		IndoorSubsystem->OnRoomChanged.AddUObject(this, &ADSIndoorVisibilityManager::StartTransition);
 
+		// Initial Room은 항상 Area.Room.Start로 시작함
+		IndoorSubsystem->SetCurrentRoom(FGameplayTag::RequestGameplayTag(FName("Area.Room.Start")));
+	}
 }
 
-void ADSIndoorVisibilityManager::StartTransition(EDSPlaceType State)
+void ADSIndoorVisibilityManager::StartTransition(FGameplayTag NewRoom)
 {
-	TargetAlpha = (State == EDSPlaceType::EPT_Indoor) ? 1.0f : 0.0f;
+	GetWorldTimerManager().ClearTimer(TransitionTimerHandle);
+
+	ActiveRoomTag = NewRoom;
+	UE_LOG(LogTemp, Warning, TEXT("Starting transition to room: %s"), *ActiveRoomTag.ToString());
+
+	for (auto& Pair : TargetRoomAlpha)
+	{
+		const bool bIsActive = (Pair.Key == ActiveRoomTag);
+		Pair.Value = bIsActive ? 1.0f : 0.0f;
+		UE_LOG(LogTemp, Warning, TEXT("Setting target alpha for room %s to %.1f"), *Pair.Key.ToString(), Pair.Value);
+	}
 
 	GetWorldTimerManager().SetTimer(TransitionTimerHandle, this, &ADSIndoorVisibilityManager::UpdateTransition, 0.016f, true);
 }
@@ -54,121 +59,57 @@ void ADSIndoorVisibilityManager::StartTransition(EDSPlaceType State)
 void ADSIndoorVisibilityManager::UpdateTransition()
 {
 	const float DeltaTime = GetWorld()->GetDeltaSeconds();
-	const float InterpSpeed = 1.0f / TransitionDuration;	
-	
-	CurrentAlpha = FMath::FInterpTo(CurrentAlpha, TargetAlpha, DeltaTime, InterpSpeed * 5.0f);
+	const float InterpSpeed = 1.0f / TransitionDuration;
 
-	ApplyFade(CurrentAlpha);
+	bool bAllFinished = true;
 
-	if(FMath::IsNearlyEqual(CurrentAlpha, TargetAlpha, 0.01f))
+	for (auto& Pair : CurrentRoomAlpha)
 	{
-		CurrentAlpha = TargetAlpha;
-		ApplyFade(CurrentAlpha);
-		GetWorldTimerManager().ClearTimer(TransitionTimerHandle);
+		const FGameplayTag& RoomTag = Pair.Key;
+
+		float& Current = Pair.Value;
+		float Target = TargetRoomAlpha[RoomTag];
+
+		Current = FMath::FInterpTo(Current, Target, DeltaTime, InterpSpeed * 5.0f);
+
+		ApplyFadeToRoom(RoomTag, Current);
+
+		if (!FMath::IsNearlyEqual(Current, Target, 0.01f))
+		{
+			bAllFinished = false;
+		}
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Alpha: %f"), CurrentAlpha);
-
 }
 
-void ADSIndoorVisibilityManager::ApplyFade(float Alpha)
+void ADSIndoorVisibilityManager::ApplyFadeToRoom(const FGameplayTag& RoomTag, float Alpha)
 {
-	for (UMaterialInstanceDynamic* MID : IndoorMIDs)
+	if (!RoomMIDs.Contains(RoomTag))
+	{
+		return;
+	}
+
+	for (UMaterialInstanceDynamic* MID : RoomMIDs[RoomTag])
 	{
 		if (MID)
 		{
 			MID->SetScalarParameterValue("Fade", Alpha);
 		}
 	}
-
-	for (UMaterialInstanceDynamic* MID : OutdoorMIDs)
-	{
-		if (MID)
-		{
-			MID->SetScalarParameterValue("Fade", 1.0f - Alpha);
-		}
-	}
 }
 
+// Area.Room.Corridor1, Area.Room.Corridor2, Area.Room.Lobby 등과 같이 Room 태그를 가진 Actor들의 MID를 캐싱하는 함수
+// Area.Room.Corridor -> [MID1, MID2, MID3]
+// Area.Room.Hall -> [MID4, MID5]	
+// Area.Room.Yard -> [MID7, MID8, MID9]
+// 같이 묶임
 void ADSIndoorVisibilityManager::CacheMIDs()
 {
-	TArray<AActor*> IndoorActors;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), IndoorMeshTag, IndoorActors);
-
-	for (AActor* Actor : IndoorActors)
-	{
-		if (!Actor)
-		{
-			continue;
-		}
-
-		TArray<UStaticMeshComponent*> MeshComponents;
-		Actor->GetComponents<UStaticMeshComponent>(MeshComponents);
-
-		for (auto* Mesh : MeshComponents)
-		{
-			if (!Mesh)
-			{
-				continue;
-			}
-			
-			const int32 MaterialCount = Mesh->GetNumMaterials();
-
-			for (int32 i = 0; i < MaterialCount; i++)
-			{
-				UMaterialInstanceDynamic* MID = Mesh->CreateAndSetMaterialInstanceDynamic(i);
-
-				if (MID)
-				{
-					IndoorMIDs.Add(MID);
-				}
-			}
-
-		}
-	}
-
-	TArray<AActor*> OutdoorActors;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), OutdoorMeshTag, OutdoorActors);
-
-	for (AActor* Actor : OutdoorActors)
-	{
-		if (!Actor)
-		{
-			continue;
-		}
-		TArray<UStaticMeshComponent*> MeshComponents;
-		Actor->GetComponents<UStaticMeshComponent>(MeshComponents);
-		for (auto* Mesh : MeshComponents)
-		{
-			if (!Mesh)
-			{
-				continue;
-			}
-			const int32 MaterialCount = Mesh->GetNumMaterials();
-
-			for (int32 i = 0; i < MaterialCount; i++)
-			{
-				UMaterialInstanceDynamic* MID = Mesh->CreateAndSetMaterialInstanceDynamic(i);
-
-				if (MID)
-				{
-					OutdoorMIDs.Add(MID);
-				}
-			}
-		}
-	}
-}
-
-// Legacy Function - Directly apply visibility without transition
-// Don't use this
-void ADSIndoorVisibilityManager::ApplyVisibility(EDSPlaceType State)
-{
-	const bool bIsIndoor = (State == EDSPlaceType::EPT_Indoor);
-
 	TArray<AActor*> Actors;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), IndoorMeshTag, Actors);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), Actors);
 
-	// Set Indoor Meshes Visibility
+	const FGameplayTag RoomRootTag =
+		FGameplayTag::RequestGameplayTag(FName("Area.Room"));
+
 	for (AActor* Actor : Actors)
 	{
 		if (!Actor)
@@ -176,41 +117,67 @@ void ADSIndoorVisibilityManager::ApplyVisibility(EDSPlaceType State)
 			continue;
 		}
 
+		// GameplayTag 인터페이스 검사
+		if (!Actor->GetClass()->ImplementsInterface(UGameplayTagAssetInterface::StaticClass()))
+		{
+			continue;
+		}
+
+		// Actor가 가진 GameplayTag 수집
+		FGameplayTagContainer TagContainer;
+		IGameplayTagAssetInterface* TagInterface = Cast<IGameplayTagAssetInterface>(Actor);
+
+		if (!TagInterface)
+		{
+			continue;
+		}
+
+		TagInterface->GetOwnedGameplayTags(TagContainer);
+
+		// Area.Room.* 태그 찾기
+		FGameplayTag FoundRoomTag;
+
+		for (const FGameplayTag& Tag : TagContainer)
+		{
+			if (Tag.MatchesTag(RoomRootTag))
+			{
+				FoundRoomTag = Tag;
+				break;
+			}
+		}
+
+		if (!FoundRoomTag.IsValid())
+		{
+			continue;
+		}
+
+		// MID 캐싱
 		TArray<UStaticMeshComponent*> MeshComponents;
 		Actor->GetComponents<UStaticMeshComponent>(MeshComponents);
 
-		for (auto* Mesh : MeshComponents)
+		for (UStaticMeshComponent* Mesh : MeshComponents)
 		{
 			if (!Mesh)
 			{
 				continue;
 			}
 
-			UMaterialInstanceDynamic* DynamicMaterial = Mesh->CreateAndSetMaterialInstanceDynamic(0);
+			const int32 MaterialCount = Mesh->GetNumMaterials();
 
-			if (DynamicMaterial)
+			for (int32 Index = 0; Index < MaterialCount; Index++)
 			{
-				//DynamicMaterial->SetScalarParameterValue("Fade", Alpha);
+				UMaterialInstanceDynamic* MID =
+					Mesh->CreateAndSetMaterialInstanceDynamic(Index);
+
+				if (MID)
+				{
+					RoomMIDs.FindOrAdd(FoundRoomTag).Add(MID);
+				}
 			}
 		}
-
-		Actor->SetActorHiddenInGame(!bIsIndoor);
 	}
 
-	Actors.Reset();
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), OutdoorMeshTag, Actors);
-
-	// Set Outdoor Meshes Visibility
-	for (AActor* Actor : Actors)
-	{
-		if (!Actor)
-		{
-			continue;
-		}
-
-		//Actor->SetActorHiddenInGame(bIsIndoor);
-
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Cached Room Count: %d"), RoomMIDs.Num());
 }
 
 // Called every frame

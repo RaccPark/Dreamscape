@@ -3,18 +3,25 @@
 
 #include "Subsystem/DSIndoorStateSubsystem.h"
 
-EDSPlaceType UDSIndoorStateSubsystem::GetAreaState() const
+FGameplayTag& UDSIndoorStateSubsystem::GetCurrentRoom()
 {
-	return CurrentAreaState;
+	return CurrentRoomTag;
 }
 
-void UDSIndoorStateSubsystem::SetAreaState(EDSPlaceType NewState)
+void UDSIndoorStateSubsystem::SetCurrentRoom(const FGameplayTag& NewRoomTag)
 {
-	if (CurrentAreaState == NewState)
+	if (!NewRoomTag.IsValid())
 	{
 		return;
 	}
 
-	CurrentAreaState = NewState;
-	OnAreaStateChanged.Broadcast(CurrentAreaState);
+	// 동일 Room이면 무시
+	if (CurrentRoomTag == NewRoomTag)
+	{
+		return;
+	}
+
+	CurrentRoomTag = NewRoomTag;
+
+	OnRoomChanged.Broadcast(CurrentRoomTag);
 }

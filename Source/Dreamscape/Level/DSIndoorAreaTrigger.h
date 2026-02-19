@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameplayTagContainer.h"
 #include "DSIndoorAreaTrigger.generated.h"
 
 UCLASS()
@@ -22,20 +23,11 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<class UBoxComponent> TriggerBox;
 
-	UPROPERTY(EditAnywhere, Category = "Sub Level")
-	FName IndoorAreaName;
-
-	UPROPERTY(EditAnywhere, Category = "Sub Level")
-	FName OutdoorAreaName;
-
-	UPROPERTY(EditAnywhere, Category = "Sub Level")
-	TObjectPtr<class ADSIndoorVisibilityManager> IndoorVisibilityManager;
+	UPROPERTY(EditAnywhere, Category = "Room")
+	FGameplayTag RoomTag;
 
 	UFUNCTION()
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
-	UFUNCTION()
-	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:	
 	// Called every frame

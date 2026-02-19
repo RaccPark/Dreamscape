@@ -4,14 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "../Enum/DSPlaceType.h"
+#include "GameplayTagContainer.h"
 #include "DSIndoorStateSubsystem.generated.h"
 
 /**
  * 
  */
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAreaStateChangedDelegate, EDSPlaceType);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRoomChangedDelegate, FGameplayTag);
 
 UCLASS()
 class DREAMSCAPE_API UDSIndoorStateSubsystem : public UGameInstanceSubsystem
@@ -19,11 +19,11 @@ class DREAMSCAPE_API UDSIndoorStateSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	EDSPlaceType GetAreaState() const;
-	void SetAreaState(EDSPlaceType NewState);
+	FGameplayTag& GetCurrentRoom();
+	void SetCurrentRoom(const FGameplayTag& NewRoomTag);
 
-	FOnAreaStateChangedDelegate OnAreaStateChanged;
+	FOnRoomChangedDelegate OnRoomChanged;
 
 private:
-	EDSPlaceType CurrentAreaState = EDSPlaceType::EPT_Outdoor;
+	FGameplayTag CurrentRoomTag;
 };

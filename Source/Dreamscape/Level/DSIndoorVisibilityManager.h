@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "../Enum/DSPlaceType.h"
+#include "GameplayTagContainer.h"
 #include "DSIndoorVisibilityManager.generated.h"
 
 UCLASS()
@@ -22,35 +23,26 @@ protected:
 
 	void OnLevelLoaded();
 
-	UPROPERTY(VisibleAnywhere, Category = "Sub Level")
-	FName OutdoorMeshTag;
-
-	UPROPERTY(VisibleAnywhere, Category = "Sub Level")
-	FName IndoorMeshTag;
-
 	UPROPERTY(EditAnywhere)
 	float TransitionDuration;
 
 private:
-	UPROPERTY()
-	TArray<class UMaterialInstanceDynamic*> IndoorMIDs;
-	UPROPERTY()
-	TArray<class UMaterialInstanceDynamic*> OutdoorMIDs;
+	TMap<FGameplayTag, TArray<UMaterialInstanceDynamic*>> RoomMIDs;
 
 	FTimerHandle TransitionTimerHandle;
 
-	float CurrentAlpha;
-	float TargetAlpha;
+	TMap<FGameplayTag, float> CurrentRoomAlpha;
+	TMap<FGameplayTag, float> TargetRoomAlpha;
+	FGameplayTag ActiveRoomTag;
 
 	UFUNCTION()
-	void StartTransition(EDSPlaceType State);
+	void StartTransition(FGameplayTag ActiveRoom);
+
 	void UpdateTransition();
-	void ApplyFade(float Alpha);
+
+	void ApplyFadeToRoom(const FGameplayTag& RoomTag, float Alpha);
 
 	void CacheMIDs();
-
-	// Legacy Function - Directly apply visibility without transition
-	void ApplyVisibility(EDSPlaceType State);
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

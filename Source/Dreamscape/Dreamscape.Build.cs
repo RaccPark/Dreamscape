@@ -17,7 +17,8 @@ public class Dreamscape : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"UMG",
-			"Niagara", 
+			"Niagara",
+			"GameplayTags",
 		});
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
