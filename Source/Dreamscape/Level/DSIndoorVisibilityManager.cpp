@@ -98,17 +98,12 @@ void ADSIndoorVisibilityManager::ApplyFadeToRoom(const FGameplayTag& RoomTag, fl
 }
 
 // Area.Room.Corridor1, Area.Room.Corridor2, Area.Room.Lobby 등과 같이 Room 태그를 가진 Actor들의 MID를 캐싱하는 함수
-// Area.Room.Corridor -> [MID1, MID2, MID3]
-// Area.Room.Hall -> [MID4, MID5]	
-// Area.Room.Yard -> [MID7, MID8, MID9]
-// 같이 묶임
 void ADSIndoorVisibilityManager::CacheMIDs()
 {
 	TArray<AActor*> Actors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), Actors);
 
-	const FGameplayTag RoomRootTag =
-		FGameplayTag::RequestGameplayTag(FName("Area.Room"));
+	const FGameplayTag RoomRootTag = FGameplayTag::RequestGameplayTag(FName("Area.Room"));
 
 	for (AActor* Actor : Actors)
 	{
