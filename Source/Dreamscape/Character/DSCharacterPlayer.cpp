@@ -180,7 +180,8 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 	FollowCamera->FieldOfView = CharacterControlData->FOV;
 
 	// Character Movement Settings
-	DefaultMaxWalkSpeed = CharacterControlData->MaxWalkSpeed;
+	this->MaxWalkSpeed = CharacterControlData->MaxWalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed;
 }
 
 void ADSCharacterPlayer::Move(const FInputActionValue& Value)
