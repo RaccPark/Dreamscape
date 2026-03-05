@@ -39,7 +39,7 @@ protected:
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> JumpAction;
+	TObjectPtr<class UInputAction> RollAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> MoveAction;
@@ -58,6 +58,9 @@ protected:
 	
 	void Move(const struct FInputActionValue& Value);
 	void Look(const struct FInputActionValue& Value);
+
+	void StartRoll(const struct FInputActionValue& Value);
+	void StopRoll(const struct FInputActionValue& Value);
 
 	void OnPeekStarted(const struct FInputActionValue& Value);
 	void OnPeekEnded(const struct FInputActionValue& Value);
@@ -85,6 +88,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSCameraPeekComponent> CameraPeekComponent;
 
+	// Player FSM Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSPlayerFSMComponent> PlayerFSMComponent;
+
 public:
 	UCameraComponent* GetCamera();
+
+protected:
+	// Animation Montage Section
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TObjectPtr<class UAnimMontage> RollMontage;
+
+public:
+	// Animation Montage Play Section
+	void PlayRollMontage();
 };

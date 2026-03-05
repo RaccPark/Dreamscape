@@ -13,6 +13,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "DSCharacterControlData.h"
 #include "Components/DSCameraPeekComponent.h"
+#include "Components/DSPlayerFSMComponent.h"
+#include "Components/PlayerStateBase/DSPlayerStateBase.h"
 
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
@@ -32,10 +34,10 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	{
 		LookAction = InputActionLookRef.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_Jump.IA_Jump'"));
-	if (InputActionJumpRef.Object)
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionRollRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_Roll.IA_Roll'"));
+	if (InputActionRollRef.Object)
 	{
-		JumpAction = InputActionJumpRef.Object;
+		RollAction = InputActionRollRef.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionPeekRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_CameraPeek.IA_CameraPeek'"));
 	if (InputActionPeekRef.Object)
@@ -55,7 +57,6 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 		DefaultSkeletonMesh = DefaultSkeletonMeshRef.Object;
 		GetMesh()->SetSkeletalMesh(DefaultSkeletonMesh);
 	}
-
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 
 	// Initialize Character Control Data
@@ -83,6 +84,9 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 
 	// Camera Peek Component
 	CameraPeekComponent = CreateDefaultSubobject<UDSCameraPeekComponent>(TEXT("CameraPeekComponent"));
+
+	// Player FSM Component
+	PlayerFSMComponent = CreateDefaultSubobject<UDSPlayerFSMComponent>(TEXT("PlayerFSMComponent"));
 	
 	// Player Movement Settings
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
@@ -108,6 +112,10 @@ void ADSCharacterPlayer::BeginPlay()
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
 
+	GetMesh()->GetAnimInstance()->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+
+
+
 	SetCharacterControl(ECharacterControlType::Quarter);
 }
 
@@ -121,11 +129,11 @@ void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 
-	// Jump
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	// Move
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::Move);
+	// Roll
+	EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::StartRoll);
+	//EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Completed, this, &ADSCharacterPlayer::StopRoll);
 	// Look
 	//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::Look);
 	// Camera Peek
@@ -159,6 +167,7 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 {
 	Super::SetCharacterControlData(CharacterControlData);
 
+	// Camera Settings
 	CameraBoom->TargetArmLength = CharacterControlData->TargetArmLength;
 	//CameraBoom->SetRelativeLocation(CharacterControlData->RelativeLocation);
 	CameraBoom->SetRelativeRotation(CharacterControlData->RelativeRotation);
@@ -169,6 +178,9 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
 
 	FollowCamera->FieldOfView = CharacterControlData->FOV;
+
+	// Character Movement Settings
+	DefaultMaxWalkSpeed = CharacterControlData->MaxWalkSpeed;
 }
 
 void ADSCharacterPlayer::Move(const FInputActionValue& Value)
@@ -246,6 +258,22 @@ void ADSCharacterPlayer::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(LookAxisVector.Y);
 }
 
+void ADSCharacterPlayer::StartRoll(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Start Roll"));
+
+	if (PlayerFSMComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] Handled Roll Input in Player FSM Component"));
+		PlayerFSMComponent->HandleRollInput();
+	}
+}
+
+void ADSCharacterPlayer::StopRoll(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Stop Roll"));
+}
+
 void ADSCharacterPlayer::OnPeekStarted(const FInputActionValue& Value)
 {
 	if (CameraPeekComponent)
@@ -271,4 +299,22 @@ void ADSCharacterPlayer::OnMouseInput(const FInputActionValue& Value)
 
 	const FVector2D MouseDelta = Value.Get<FVector2D>();
 	CameraPeekComponent->AddMouseDelta(MouseDelta);
+}
+
+void ADSCharacterPlayer::PlayRollMontage()
+{
+	if (!RollMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RollMontage is not set!"));
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimInstance is not valid!"));
+		return;
+	}
+
+	AnimInstance->Montage_Play(RollMontage);
 }

@@ -7,4 +7,5 @@ UDSCharacterControlData::UDSCharacterControlData()
 {
 	TargetArmLength = 400.f;
 	FOV = 90.0f;
+	MaxWalkSpeed = 225.0f;
 }
