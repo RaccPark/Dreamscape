@@ -14,7 +14,7 @@ enum class EPlayerStateType : uint8
 	EPS_Idle,
 	EPS_Walk,
 	EPS_Roll,
-	EPS_Attack,
+	EPS_SwordAttack,
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -57,7 +57,7 @@ private:
 	UPROPERTY()
 	UDSPlayerStateBase* RollState;
 	UPROPERTY()
-	UDSPlayerStateBase* AttackState;
+	UDSPlayerStateBase* SwordAttack;
 
 	UPROPERTY()
 	TObjectPtr<class ADSCharacterPlayer> OwnerCharacter;

@@ -23,5 +23,6 @@ void UDSPlayerState_Roll::Enter()
 
 void UDSPlayerState_Roll::Exit()
 {
-
+	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] Exiting Roll state."));
 }
+ 

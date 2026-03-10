@@ -54,6 +54,9 @@ protected:
 	TObjectPtr<class UInputAction> MousePosition;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> SwordAttackAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	float TurnInterpSpeed = 10.0f;
 	
 	void Move(const struct FInputActionValue& Value);
@@ -65,6 +68,8 @@ protected:
 	void OnPeekStarted(const struct FInputActionValue& Value);
 	void OnPeekEnded(const struct FInputActionValue& Value);
 	void OnMouseInput(const struct FInputActionValue& Value);
+
+	void SwordAttack(const struct FInputActionValue& Value);
 
 	float DefaultMaxWalkSpeed;
 	float MaxWalkSpeed;
@@ -96,11 +101,32 @@ public:
 	UCameraComponent* GetCamera();
 
 protected:
-	// Animation Montage Section
+	// Roll Action Section
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TObjectPtr<class UAnimMontage> RollMontage;
 
 public:
 	// Animation Montage Play Section
 	void PlayRollMontage();
+
+	// Combo Action Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<class UAnimMontage> SwordAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack", Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSCharacterComboActionData> ComboActionData;
+
+	void ComboActionBegin();
+	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+
+	void SetComboCheckTimer();
+	void ComboCheck();
+
+	int CurrentCombo;
+
+	FTimerHandle ComboTimerHandle;
+	bool HasNextComboCommand;
+public:
+	void ProcessComboCommand();
 };

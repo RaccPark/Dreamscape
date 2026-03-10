@@ -15,6 +15,8 @@
 #include "Components/DSCameraPeekComponent.h"
 #include "Components/DSPlayerFSMComponent.h"
 #include "Components/PlayerStateBase/DSPlayerStateBase.h"
+#include "Animation/AnimMontage.h"
+#include "Character/DSCharacterComboActionData.h"
 
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
@@ -48,6 +50,11 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	if (InputActionMousePositionRef.Object)
 	{
 		MousePosition = InputActionMousePositionRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionSwordAttackActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_SwordAttack.IA_SwordAttack'"));
+	if (InputActionMousePositionRef.Object)
+	{
+		SwordAttackAction = InputActionSwordAttackActionRef.Object;
 	}
 
 	// Default Mesh & Animation Setting
@@ -100,6 +107,9 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	bUseControllerRotationYaw = false;
+
+	CurrentCombo = 0;
+	HasNextComboCommand = false;
 }
 
 void ADSCharacterPlayer::BeginPlay()
@@ -140,6 +150,9 @@ void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(CameraPeekAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::OnPeekStarted);
 	EnhancedInputComponent->BindAction(CameraPeekAction, ETriggerEvent::Completed, this, &ADSCharacterPlayer::OnPeekEnded);
 	EnhancedInputComponent->BindAction(MousePosition, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::OnMouseInput);
+
+	// Attack
+	EnhancedInputComponent->BindAction(SwordAttackAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::SwordAttack);
 }
 
 void ADSCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
@@ -210,6 +223,15 @@ void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 	}
 	*/
 
+	// Roll 상태에서는 비활성화
+	EPlayerStateType CurrentState = PlayerFSMComponent->GetCurrentStateType();
+	if (CurrentState == EPlayerStateType::EPS_Roll ||
+		CurrentState == EPlayerStateType::EPS_SwordAttack)
+	{
+		return;
+	}
+
+	// 이동 설정
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -217,6 +239,7 @@ void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 
 	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
@@ -265,6 +288,11 @@ void ADSCharacterPlayer::StartRoll(const FInputActionValue& Value)
 
 	if (PlayerFSMComponent)
 	{
+		if (PlayerFSMComponent->GetCurrentStateType() == EPlayerStateType::EPS_Roll)
+		{
+			return;
+		}
+
 		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] Handled Roll Input in Player FSM Component"));
 		PlayerFSMComponent->HandleRollInput();
 	}
@@ -302,6 +330,16 @@ void ADSCharacterPlayer::OnMouseInput(const FInputActionValue& Value)
 	CameraPeekComponent->AddMouseDelta(MouseDelta);
 }
 
+void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Log, TEXT("Sword Attack"));
+
+	if (PlayerFSMComponent)
+	{
+		PlayerFSMComponent->ChangeState(EPlayerStateType::EPS_SwordAttack);
+	}
+}
+
 void ADSCharacterPlayer::PlayRollMontage()
 {
 	if (!RollMontage)
@@ -318,4 +356,87 @@ void ADSCharacterPlayer::PlayRollMontage()
 	}
 
 	AnimInstance->Montage_Play(RollMontage);
+}
+
+void ADSCharacterPlayer::ProcessComboCommand()
+{
+	if (CurrentCombo == 0)
+	{
+		ComboActionBegin();
+		return;
+	}
+
+	if (!ComboTimerHandle.IsValid())
+	{
+		HasNextComboCommand = false;
+	}
+	else
+	{
+		HasNextComboCommand = true;
+	}
+}
+
+void ADSCharacterPlayer::ComboActionBegin()
+{
+	CurrentCombo = 1;
+
+	// 이동기능 비활성화
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimInstance is not valid!"));
+		return;
+	}
+	AnimInstance->Montage_Play(SwordAttackMontage, AttackSpeedRate);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ADSCharacterPlayer::ComboActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, SwordAttackMontage);
+
+	ComboTimerHandle.Invalidate();
+	SetComboCheckTimer();
+}
+
+void ADSCharacterPlayer::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
+{
+	ensure(CurrentCombo != 0);
+	CurrentCombo = 0;
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
+	PlayerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
+}
+
+void ADSCharacterPlayer::SetComboCheckTimer()
+{
+	int32 ComboIndex = CurrentCombo - 1;
+	ensure(ComboActionData->EffectiveFrameCounts.IsValidIndex(ComboIndex));
+
+	const float AttackSpeedRate = 1.0f;
+	// 발동된 시간을 알기 위하여 ComboActionData에서 EffectiveFrameCounts와 FrameRate를 이용하여 계산
+	float ComboEffectiveTime = (ComboActionData->EffectiveFrameCounts[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
+	if (ComboEffectiveTime > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, this, &ADSCharacterPlayer::ComboCheck, ComboEffectiveTime, false);
+	}
+}
+
+void ADSCharacterPlayer::ComboCheck()
+{
+	ComboTimerHandle.Invalidate();
+	if (HasNextComboCommand)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
+
+		FName NextSectionName = *FString::Printf(TEXT("%s%d"), *ComboActionData->MontageSectionNameProfix, CurrentCombo);
+		AnimInstance->Montage_JumpToSection(NextSectionName, SwordAttackMontage);
+
+		SetComboCheckTimer();
+		HasNextComboCommand = false;
+	}
 }

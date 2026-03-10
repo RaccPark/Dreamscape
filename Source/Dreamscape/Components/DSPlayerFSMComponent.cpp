@@ -8,7 +8,7 @@
 #include "Components/PlayerStateBase/DSPlayerState_Idle.h"
 #include "Components/PlayerStateBase/DSPlayerState_Walk.h"
 #include "Components/PlayerStateBase/DSPlayerState_Roll.h"
-#include "Components/PlayerStateBase/DSPlayerState_Attack.h"
+#include "Components/PlayerStateBase/DSPlayerState_SwordAttack.h"
 
 // Sets default values for this component's properties
 UDSPlayerFSMComponent::UDSPlayerFSMComponent()
@@ -79,7 +79,7 @@ void UDSPlayerFSMComponent::BeginPlay()
 	CreateState<UDSPlayerState_Idle>(EPlayerStateType::EPS_Idle);
 	CreateState<UDSPlayerState_Walk>(EPlayerStateType::EPS_Walk);
 	CreateState<UDSPlayerState_Roll>(EPlayerStateType::EPS_Roll);
-	CreateState<UDSPlayerState_Attack>(EPlayerStateType::EPS_Attack);
+	CreateState<UDSPlayerState_SwordAttack>(EPlayerStateType::EPS_SwordAttack);
 
 	ChangeState(EPlayerStateType::EPS_Idle);
 }
