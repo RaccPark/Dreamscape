@@ -17,6 +17,7 @@
 #include "Components/PlayerStateBase/DSPlayerStateBase.h"
 #include "Animation/AnimMontage.h"
 #include "Character/DSCharacterComboActionData.h"
+#include "Weapon/DSSwordWeapon.h"
 
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
@@ -124,9 +125,15 @@ void ADSCharacterPlayer::BeginPlay()
 
 	GetMesh()->GetAnimInstance()->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
 
-
-
 	SetCharacterControl(ECharacterControlType::Quarter);
+
+	// Weapon Setting(Just for Test)
+	if(SwordWeaponToEquip)
+	{
+		EquippedSwordWeapon = GetWorld()->SpawnActor<ADSSwordWeapon>(SwordWeaponToEquip);
+
+		EquippedSwordWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("RightHandSocket"));
+	}
 }
 
 void ADSCharacterPlayer::Tick(float DeltaTime)
@@ -374,6 +381,26 @@ void ADSCharacterPlayer::ProcessComboCommand()
 	{
 		HasNextComboCommand = true;
 	}
+}
+
+ADSSwordWeapon* ADSCharacterPlayer::GetEquippedSwordWeapon() const
+{
+	if(!EquippedSwordWeapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquippedSwordWeapon is not set!"));
+		return nullptr;
+	}
+	return EquippedSwordWeapon;
+}
+
+void ADSCharacterPlayer::SwordAttackStart()
+{
+	EquippedSwordWeapon->StartAttackTrace();
+}
+
+void ADSCharacterPlayer::SwordAttackEnd()
+{
+	EquippedSwordWeapon->EndAttackTrace();
 }
 
 void ADSCharacterPlayer::ComboActionBegin()

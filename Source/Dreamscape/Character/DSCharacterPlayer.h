@@ -129,4 +129,18 @@ protected:
 	bool HasNextComboCommand;
 public:
 	void ProcessComboCommand();
+	
+	// Weapon Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ADSSwordWeapon> SwordWeaponToEquip;
+
+	class ADSSwordWeapon* EquippedSwordWeapon;
+
+public:
+	class ADSSwordWeapon* GetEquippedSwordWeapon() const;
+
+	void SwordAttackStart();
+	void SwordAttackEnd();
+
 };

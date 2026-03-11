@@ -6,7 +6,7 @@
 
 void UDSPlayerState_SwordAttack::Enter()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] Entering Roll state."));
+	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_SwordAttack] Entering SwordAttack state."));
 
 	if (!PlayerCharacter || !OwnerFSMComponent)
 	{
@@ -17,5 +17,5 @@ void UDSPlayerState_SwordAttack::Enter()
 }
 void UDSPlayerState_SwordAttack::Exit()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] Exiting Roll state."));
+	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_SwordAttack] Exiting SwordAttack state."));
 }
