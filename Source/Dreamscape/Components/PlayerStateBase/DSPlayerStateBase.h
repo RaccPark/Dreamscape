@@ -23,6 +23,9 @@ public:
 
 	virtual void OnMove(const FVector2D& Value);
 	virtual void OnRoll();
+	virtual void OnSwordAttack();
+
+	virtual void OnComboActionEnd();
 
 protected:
 	UPROPERTY()

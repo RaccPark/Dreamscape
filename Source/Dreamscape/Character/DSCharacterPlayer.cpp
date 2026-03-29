@@ -104,6 +104,7 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed;		// Apply Default Max Walk Speed
 	GetCharacterMovement()->MaxStepHeight = 5.0f;
 	GetCharacterMovement()->SetWalkableFloorAngle(50.f);
+	TurnInterpSpeed = 15.0f;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
@@ -230,16 +231,15 @@ void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 	}
 	*/
 
-	// Roll 상태에서는 비활성화
-	EPlayerStateType CurrentState = PlayerFSMComponent->GetCurrentStateType();
-	if (CurrentState == EPlayerStateType::EPS_Roll ||
-		CurrentState == EPlayerStateType::EPS_SwordAttack)
+	// 이동 설정
+	FVector2D MovementVector = Value.Get<FVector2D>();
+	PlayerFSMComponent->HandleMoveInput(MovementVector);
+	
+	EPlayerStateType CurrentStateType = PlayerFSMComponent->GetCurrentStateType();
+	if (CurrentStateType != EPlayerStateType::EPS_Walk)
 	{
 		return;
 	}
-
-	// 이동 설정
-	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	const FRotator Rotation = Controller->GetControlRotation();
 	const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -295,12 +295,6 @@ void ADSCharacterPlayer::StartRoll(const FInputActionValue& Value)
 
 	if (PlayerFSMComponent)
 	{
-		if (PlayerFSMComponent->GetCurrentStateType() == EPlayerStateType::EPS_Roll)
-		{
-			return;
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] Handled Roll Input in Player FSM Component"));
 		PlayerFSMComponent->HandleRollInput();
 	}
 }
@@ -328,13 +322,11 @@ void ADSCharacterPlayer::OnPeekEnded(const FInputActionValue& Value)
 
 void ADSCharacterPlayer::OnMouseInput(const FInputActionValue& Value)
 {
-	if (!CameraPeekComponent)
+	if (CameraPeekComponent)
 	{
-		return;
+		const FVector2D MouseDelta = Value.Get<FVector2D>();
+		CameraPeekComponent->AddMouseDelta(MouseDelta);
 	}
-
-	const FVector2D MouseDelta = Value.Get<FVector2D>();
-	CameraPeekComponent->AddMouseDelta(MouseDelta);
 }
 
 void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)
@@ -343,7 +335,7 @@ void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)
 
 	if (PlayerFSMComponent)
 	{
-		PlayerFSMComponent->ChangeState(EPlayerStateType::EPS_SwordAttack);
+		PlayerFSMComponent->HandleSwordAttackInput();
 	}
 }
 
@@ -393,22 +385,9 @@ ADSSwordWeapon* ADSCharacterPlayer::GetEquippedSwordWeapon() const
 	return EquippedSwordWeapon;
 }
 
-void ADSCharacterPlayer::SwordAttackStart()
-{
-	EquippedSwordWeapon->StartAttackTrace();
-}
-
-void ADSCharacterPlayer::SwordAttackEnd()
-{
-	EquippedSwordWeapon->EndAttackTrace();
-}
-
 void ADSCharacterPlayer::ComboActionBegin()
 {
 	CurrentCombo = 1;
-
-	// 이동기능 비활성화
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 	
 	const float AttackSpeedRate = 1.0f;
 
@@ -434,7 +413,8 @@ void ADSCharacterPlayer::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProp
 	CurrentCombo = 0;
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 
-	PlayerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
+	//PlayerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
+	PlayerFSMComponent->HandleComboActionEnd();
 }
 
 void ADSCharacterPlayer::SetComboCheckTimer()

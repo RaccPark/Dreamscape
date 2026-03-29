@@ -31,10 +31,10 @@ public:
 
 	void HandleMoveInput(const FVector2D& Input);
 	void HandleRollInput();
+	void HandleSwordAttackInput();
+	void HandleComboActionEnd();
 
 	EPlayerStateType GetCurrentStateType() const;
-
-
 
 protected:
 	// Called when the game starts

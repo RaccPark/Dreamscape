@@ -57,7 +57,7 @@ protected:
 	TObjectPtr<class UInputAction> SwordAttackAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
-	float TurnInterpSpeed = 10.0f;
+	float TurnInterpSpeed;
 	
 	void Move(const struct FInputActionValue& Value);
 	void Look(const struct FInputActionValue& Value);
@@ -139,8 +139,5 @@ protected:
 
 public:
 	class ADSSwordWeapon* GetEquippedSwordWeapon() const;
-
-	void SwordAttackStart();
-	void SwordAttackEnd();
 
 };

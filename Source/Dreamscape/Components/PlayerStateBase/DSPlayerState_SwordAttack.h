@@ -16,5 +16,9 @@ class DREAMSCAPE_API UDSPlayerState_SwordAttack : public UDSPlayerStateBase
 	
 public:
 	virtual void Enter() override;
+	virtual void Update(float DeltaTime) override;
 	virtual void Exit() override;
+
+	virtual void OnSwordAttack() override;
+	virtual void OnComboActionEnd() override;
 };

@@ -5,11 +5,12 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Character/DSCharacterPlayer.h"
 #include "DrawDebugHelpers.h"
+#include "Interface/DSDamageableInterface.h"
 
 // Sets default values
 ADSSwordWeapon::ADSSwordWeapon()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	SwordWeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordWeaponMesh"));
@@ -23,7 +24,7 @@ ADSSwordWeapon::ADSSwordWeapon()
 void ADSSwordWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called every frame
@@ -72,7 +73,7 @@ void ADSSwordWeapon::PerformTrace()
 
 	TArray<FHitResult> Hits;
 
-	UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, 1.f, UEngineTypes::ConvertToTraceType(ECC_Pawn), false, HitActors, EDrawDebugTrace::None, Hits, true);
+	UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, 1.f, UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, HitActors, EDrawDebugTrace::None, Hits, true);
 
 	for (auto& Hit : Hits)
 	{
@@ -89,7 +90,14 @@ void ADSSwordWeapon::PerformTrace()
 			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
 
 			// Deal damage to the hit actor or apply any other effects here
-			// TBD
+			IDSDamageableInterface* DamageableActor = Cast<IDSDamageableInterface>(HitActor);
+			if (DamageableActor)
+			{
+				// Example damage application
+				FVector KnockbackDirection = (HitActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				FVector KnockbackNoHeightDirection = FVector(KnockbackDirection.X, KnockbackDirection.Y, 0.f).GetSafeNormal();
+				DamageableActor->ApplyDamageWithKnockback(1.f, KnockbackNoHeightDirection, 250.f); // Example knockback
+			}
 		}
 	}
 }

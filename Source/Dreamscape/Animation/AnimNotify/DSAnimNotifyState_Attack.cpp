@@ -13,6 +13,8 @@ void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UA
 		if (ADSSwordWeapon* Weapon = Player->GetEquippedSwordWeapon())
 		{
 			Weapon->StartAttackTrace();
+			// 임시 캐릭터 런치
+			Player->LaunchCharacter(Player->GetActorForwardVector() * 600.f, true, true);
 		}
 	}
 }

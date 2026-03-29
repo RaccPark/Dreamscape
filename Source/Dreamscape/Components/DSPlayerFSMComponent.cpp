@@ -52,14 +52,41 @@ void UDSPlayerFSMComponent::ChangeState(EPlayerStateType NewType)
 
 void UDSPlayerFSMComponent::HandleMoveInput(const FVector2D& Input)
 {
+	if (CurrentState)
+	{
+		CurrentState->OnMove(Input);
+	}
 }
 
 void UDSPlayerFSMComponent::HandleRollInput()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerFSMComponent] Roll input received in FSM Component. Current state: %s"), *CurrentState->GetClass()->GetName());
+
 	if (CurrentState)
 	{
+		if (CurrentStateType == EPlayerStateType::EPS_Roll)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerFSMComponent] Already in Roll state. Ignoring roll input."));
+			return;
+		}
+
 		CurrentState->OnRoll();
+	}
+}
+
+void UDSPlayerFSMComponent::HandleSwordAttackInput()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnSwordAttack();
+	}
+}
+
+void UDSPlayerFSMComponent::HandleComboActionEnd()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnComboActionEnd();
 	}
 }
 

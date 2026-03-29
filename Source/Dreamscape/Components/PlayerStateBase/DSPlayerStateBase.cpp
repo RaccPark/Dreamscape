@@ -22,6 +22,7 @@ void UDSPlayerStateBase::Enter()
 
 void UDSPlayerStateBase::Update(float DeltaTime)
 {
+
 }
 
 void UDSPlayerStateBase::Exit()
@@ -31,9 +32,20 @@ void UDSPlayerStateBase::Exit()
 
 void UDSPlayerStateBase::OnMove(const FVector2D& Value)
 {
+	
 }
 
 void UDSPlayerStateBase::OnRoll()
 {
 	UE_LOG(LogTemp, Log, TEXT("Roll input received in state: %s"), *GetClass()->GetName());
+}
+
+void UDSPlayerStateBase::OnSwordAttack()
+{
+	UE_LOG(LogTemp, Log, TEXT("Sword attack input received in state: %s"), *GetClass()->GetName());
+}
+
+void UDSPlayerStateBase::OnComboActionEnd()
+{
+
 }

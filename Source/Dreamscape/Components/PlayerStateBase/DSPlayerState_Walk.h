@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -13,5 +13,13 @@ UCLASS()
 class DREAMSCAPE_API UDSPlayerState_Walk : public UDSPlayerStateBase
 {
 	GENERATED_BODY()
+	
+public:
+	virtual void Enter() override;
+	virtual void Update(float DeltaTime) override;
+	virtual void Exit() override;
+
+	virtual void OnRoll() override;
+	virtual void OnSwordAttack() override;
 	
 };

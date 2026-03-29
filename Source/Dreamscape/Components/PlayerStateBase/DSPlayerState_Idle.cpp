@@ -6,6 +6,28 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/DSPlayerFSMComponent.h"
 
+void UDSPlayerState_Idle::Enter()
+{
+}
+
+void UDSPlayerState_Idle::Update(float DeltaTime)
+{
+}
+
+void UDSPlayerState_Idle::Exit()
+{
+}
+
+void UDSPlayerState_Idle::OnMove(const FVector2D& Value)
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Walk);
+}
+
 void UDSPlayerState_Idle::OnRoll()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Idle] OnRoll called. Attempting to transition to Roll state."));
@@ -16,4 +38,14 @@ void UDSPlayerState_Idle::OnRoll()
 
 	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Roll);
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Idle] Transitioned to Roll state."));
+}
+
+void UDSPlayerState_Idle::OnSwordAttack()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_SwordAttack);
 }

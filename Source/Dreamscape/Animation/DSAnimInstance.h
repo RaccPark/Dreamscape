@@ -34,4 +34,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	float MovingThreshould;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
+	uint8 bIsDead : 1;
 };

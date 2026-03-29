@@ -3,6 +3,7 @@
 
 #include "Components/PlayerStateBase/DSPlayerState_SwordAttack.h"
 #include "Character/DSCharacterPlayer.h"
+#include "Components/DSPlayerFSMComponent.h"
 
 void UDSPlayerState_SwordAttack::Enter()
 {
@@ -15,7 +16,31 @@ void UDSPlayerState_SwordAttack::Enter()
 
 	PlayerCharacter->ProcessComboCommand();
 }
+void UDSPlayerState_SwordAttack::Update(float DeltaTime)
+{
+
+}
+
 void UDSPlayerState_SwordAttack::Exit()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_SwordAttack] Exiting SwordAttack state."));
+}
+
+void UDSPlayerState_SwordAttack::OnSwordAttack()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	PlayerCharacter->ProcessComboCommand();
+}
+
+void UDSPlayerState_SwordAttack::OnComboActionEnd()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
 }

@@ -15,5 +15,11 @@ class DREAMSCAPE_API UDSPlayerState_Idle : public UDSPlayerStateBase
 	GENERATED_BODY()
 	
 public:
+	virtual void Enter() override;
+	virtual void Update(float DeltaTime) override;
+	virtual void Exit() override;
+
+	virtual void OnMove(const FVector2D& Value) override;
 	virtual void OnRoll() override;
+	virtual void OnSwordAttack() override;
 };

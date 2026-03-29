@@ -8,6 +8,7 @@
 UDSAnimInstance::UDSAnimInstance()
 {
 	MovingThreshould = 3.0f;
+	bIsDead = false;
 }
 
 void UDSAnimInstance::NativeInitializeAnimation()
