@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "../Enum/DSPlaceType.h"
+#include "../Types/DSPlaceType.h"
 #include "GameplayTagContainer.h"
 #include "DSIndoorVisibilityManager.generated.h"
 

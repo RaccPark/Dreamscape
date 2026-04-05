@@ -21,4 +21,7 @@ public:
 
 	virtual void OnSwordAttack() override;
 	virtual void OnComboActionEnd() override;
+
+protected:
+	bool bIsAttacking;
 };

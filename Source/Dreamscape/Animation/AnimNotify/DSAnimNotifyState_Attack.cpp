@@ -3,14 +3,14 @@
 
 #include "Animation/AnimNotify/DSAnimNotifyState_Attack.h"
 #include "Character/DSCharacterPlayer.h"
-#include "Weapon/DSSwordWeapon.h"
+#include "Weapon/DSSwordWeaponBase.h"
 
 void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
 	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
 	if (Player)
 	{
-		if (ADSSwordWeapon* Weapon = Player->GetEquippedSwordWeapon())
+		if (ADSSwordWeaponBase* Weapon = Player->GetEquippedSwordWeapon())
 		{
 			Weapon->StartAttackTrace();
 			// 임시 캐릭터 런치
@@ -24,7 +24,7 @@ void UDSAnimNotifyState_Attack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAni
 	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
 	if (Player)
 	{
-		if (ADSSwordWeapon* Weapon = Player->GetEquippedSwordWeapon())
+		if (ADSSwordWeaponBase* Weapon = Player->GetEquippedSwordWeapon())
 		{
 			Weapon->EndAttackTrace();
 		}

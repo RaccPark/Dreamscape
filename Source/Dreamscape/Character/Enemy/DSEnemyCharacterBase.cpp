@@ -2,6 +2,10 @@
 
 
 #include "Character/Enemy/DSEnemyCharacterBase.h"
+#include "Animation/DSEnemyAnimInstance.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/DSEnemyAnimInstance.h"
 
 // Sets default values
 ADSEnemyCharacterBase::ADSEnemyCharacterBase()
@@ -9,8 +13,10 @@ ADSEnemyCharacterBase::ADSEnemyCharacterBase()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-
-
+	MaxHealth = 3.0f;
+	CurrentHealth = MaxHealth;
+	ChaseStartRange = 300.0f;
+	AttackStartRange = 50.0f;
 }
 
 void ADSEnemyCharacterBase::TakeDamage(float DamageAmount)
@@ -27,14 +33,43 @@ void ADSEnemyCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	EnemyAnimInstance = Cast<UDSEnemyAnimInstance>(GetMesh()->GetAnimInstance());
+
+	CurrentHealth = MaxHealth;
+}
+
+void ADSEnemyCharacterBase::Attack()
+{
+
 }
 
 void ADSEnemyCharacterBase::OnDeath()
 {
-	// Play death animation
-	if (DeathMontage)
+	// Disable character movement & collision
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	DoRagdoll();
+
+	// Set death flag in animation instance
+	if (EnemyAnimInstance)
 	{
-		PlayAnimMontage(DeathMontage);
+		EnemyAnimInstance->bIsDead = true;
+	}
+}
+
+void ADSEnemyCharacterBase::DoRagdoll()
+{
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
+}
+
+void ADSEnemyCharacterBase::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	// Handle logic after attack montage ends, e.g., reset attack state
+	if (OnAttackEnded.IsBound())
+	{
+		OnAttackEnded.Broadcast();
 	}
 }
 
@@ -50,5 +85,15 @@ void ADSEnemyCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+float ADSEnemyCharacterBase::GetChaseStartRange() const
+{
+	return ChaseStartRange;
+}
+
+float ADSEnemyCharacterBase::GetAttackStartRange() const
+{
+	return AttackStartRange;
 }
 

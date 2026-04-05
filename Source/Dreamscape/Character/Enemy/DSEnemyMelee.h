@@ -19,15 +19,15 @@ public:
 	ADSEnemyMelee();
 	
 protected:
+	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackRange;
-
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackDamage;
+	virtual void OnDeath() override;
 
 public:
 	virtual void ApplyDamage(float DamageAmount) override;
 	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
-	
+
+	virtual void Attack() override;
+
+	void UpdateWalkSpeed(float NewSpeed);
 };

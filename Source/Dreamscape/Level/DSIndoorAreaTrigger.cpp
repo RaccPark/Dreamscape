@@ -5,7 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "Level/DSIndoorVisibilityManager.h"
 #include "../Subsystem/DSIndoorStateSubsystem.h"
-#include "../Enum/DSPlaceType.h"
+#include "../Types/DSPlaceType.h"
 
 // Sets default values
 ADSIndoorAreaTrigger::ADSIndoorAreaTrigger()

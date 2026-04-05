@@ -14,6 +14,12 @@ void UDSPlayerState_SwordAttack::Enter()
 		return;
 	}
 
+	if (!bIsAttacking)
+	{
+		bIsAttacking = true;
+		PlayerCharacter->SetEquippedWeaponSocket("RightWeaponEquipSocket");
+	}
+
 	PlayerCharacter->ProcessComboCommand();
 }
 void UDSPlayerState_SwordAttack::Update(float DeltaTime)
@@ -42,5 +48,8 @@ void UDSPlayerState_SwordAttack::OnComboActionEnd()
 	{
 		return;
 	}
+
+	bIsAttacking = false;
+	PlayerCharacter->SetEquippedWeaponSocket("WeaponIdleSocket");
 	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
 }

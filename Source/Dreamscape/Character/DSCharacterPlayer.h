@@ -133,11 +133,13 @@ public:
 	// Weapon Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ADSSwordWeapon> SwordWeaponToEquip;
+	TSubclassOf<class ADSSwordWeaponBase> SwordWeaponToEquip;
 
-	class ADSSwordWeapon* EquippedSwordWeapon;
+	class ADSSwordWeaponBase* EquippedSwordWeapon;
 
 public:
-	class ADSSwordWeapon* GetEquippedSwordWeapon() const;
+	void SetEquippedWeaponSocket(FName SocketName);
+
+	class ADSSwordWeaponBase* GetEquippedSwordWeapon() const;
 
 };

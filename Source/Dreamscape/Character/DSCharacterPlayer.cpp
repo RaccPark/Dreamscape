@@ -17,7 +17,7 @@
 #include "Components/PlayerStateBase/DSPlayerStateBase.h"
 #include "Animation/AnimMontage.h"
 #include "Character/DSCharacterComboActionData.h"
-#include "Weapon/DSSwordWeapon.h"
+#include "Weapon/DSSwordWeaponBase.h"
 
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
@@ -131,9 +131,9 @@ void ADSCharacterPlayer::BeginPlay()
 	// Weapon Setting(Just for Test)
 	if(SwordWeaponToEquip)
 	{
-		EquippedSwordWeapon = GetWorld()->SpawnActor<ADSSwordWeapon>(SwordWeaponToEquip);
+		EquippedSwordWeapon = GetWorld()->SpawnActor<ADSSwordWeaponBase>(SwordWeaponToEquip);
 
-		EquippedSwordWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("RightHandSocket"));
+		EquippedSwordWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("WeaponIdleSocket"));
 	}
 }
 
@@ -375,7 +375,19 @@ void ADSCharacterPlayer::ProcessComboCommand()
 	}
 }
 
-ADSSwordWeapon* ADSCharacterPlayer::GetEquippedSwordWeapon() const
+void ADSCharacterPlayer::SetEquippedWeaponSocket(FName SocketName)
+{
+	if (!EquippedSwordWeapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquippedSwordWeapon is not set!"));
+		return;
+	}
+	// 소켓에서 장착 해제
+	EquippedSwordWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	EquippedSwordWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+}
+
+ADSSwordWeaponBase* ADSCharacterPlayer::GetEquippedSwordWeapon() const
 {
 	if(!EquippedSwordWeapon)
 	{
