@@ -30,4 +30,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = CharacterControl, Meta = (AllowPrivateAccess = "true"))
 	TMap<ECharacterControlType, class UDSCharacterControlData*> CharacterControlManager;
+
+	UPROPERTY(VisibleAnywhere, Category = "Character Stats", Meta = (AllowPrivateAccess = "true"))
+	float MaxHealth;
+
+	UPROPERTY(VisibleAnywhere, Category = "Character Stats", Meta = (AllowPrivateAccess = "true"))
+	float CurrentHealth;
+
+protected:
+	virtual void OnDeath();
+
 };

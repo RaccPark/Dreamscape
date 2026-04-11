@@ -8,6 +8,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/DSEnemyAnimInstance.h"
 
+#include "DrawDebugHelpers.h" 
+
 ADSEnemyMelee::ADSEnemyMelee()
 {
 	AttackDamage = 1.0f;
@@ -20,6 +22,11 @@ ADSEnemyMelee::ADSEnemyMelee()
 	// AI Controller 설정
 	AIControllerClass = ADSEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// Attack 관련 설정
+	MeleeSocket = "MeleeSocket";
+	MeleeTraceRadius = 20.0f;
+	bShowDebugTrace = false;
 }
 
 void ADSEnemyMelee::BeginPlay()
@@ -42,8 +49,20 @@ void ADSEnemyMelee::OnDeath()
 
 }
 
+void ADSEnemyMelee::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 void ADSEnemyMelee::ApplyDamage(float DamageAmount)
 {
+	CurrentHealth -= DamageAmount;
+	if (CurrentHealth <= 0.0f)
+	{
+		OnDeath();
+		return;
+	}
+
 	if (HitReactMontage)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Playing hit react montage!"));
@@ -62,8 +81,6 @@ void ADSEnemyMelee::ApplyDamage(float DamageAmount)
 			EnemyAIController->GetBlackboardComponent()->SetValueAsBool(FName("IsHitted"), false);
 			}, 0.5f, false); // 0.5초 후에 피격 상태 해제
 	}
-
-	TakeDamage(DamageAmount);
 }
 
 void ADSEnemyMelee::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
@@ -81,6 +98,7 @@ void ADSEnemyMelee::Attack()
 	
 	if (EnemyAnimInstance && AttackMontage)
 	{
+		// 
 		FOnMontageEnded MontageEndedDelegate;
 		MontageEndedDelegate.BindUObject(this, &ADSEnemyCharacterBase::OnAttackMontageEnded);
 		EnemyAnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, AttackMontage);
@@ -90,4 +108,67 @@ void ADSEnemyMelee::Attack()
 void ADSEnemyMelee::UpdateWalkSpeed(float NewSpeed)
 {
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+}
+
+void ADSEnemyMelee::StartMeleeTrace()
+{
+	HitActors.Empty();	// 공격 시작 시 이미 공격이 적용된 액터 목록 초기화
+
+	PreviousSocketLocation = GetMesh()->GetSocketLocation(MeleeSocket);
+	if (!GetMesh()->DoesSocketExist(MeleeSocket))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Sockets 'MeleeSocket' do not exist on the mesh!"));
+	}
+}
+
+void ADSEnemyMelee::PerformMeleeTrace()
+{
+	FVector CurrentSocketLocation = GetMesh()->GetSocketLocation(MeleeSocket);
+
+	// 소켓 검사
+	if (!GetMesh()->DoesSocketExist(MeleeSocket))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Sockets 'MeleeSocket' do not exist on the mesh!"));
+	}
+
+	TArray<FHitResult> HitResults;
+	FCollisionShape ColiisionSphere = FCollisionShape::MakeSphere(MeleeTraceRadius);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);	// 자신은 충돌 검사에서 제외
+
+	bool bHit = GetWorld()->SweepMultiByChannel(HitResults, PreviousSocketLocation, CurrentSocketLocation, FQuat::Identity, ECC_GameTraceChannel1, ColiisionSphere, QueryParams);
+
+	if (bShowDebugTrace)
+	{
+		FColor DebugColor = bHit ? FColor::Red : FColor::Green;
+		DrawDebugCapsule(GetWorld(), (PreviousSocketLocation + CurrentSocketLocation) * 0.5f, FVector::Distance(PreviousSocketLocation, CurrentSocketLocation) * 0.5f, ColiisionSphere.GetSphereRadius(), FQuat::FindBetweenNormals(FVector::UpVector, CurrentSocketLocation - PreviousSocketLocation), DebugColor, false, 2.0f);
+	}
+
+	if (bHit)
+	{
+		for (const FHitResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+
+			if (HitActor && !HitActors.Contains(HitActor))
+			{
+				HitActors.Add(HitActor);
+
+				IDSDamageableInterface* DamageableActor = Cast<IDSDamageableInterface>(HitActor);
+				if (DamageableActor)
+				{
+					DamageableActor->ApplyDamage(AttackDamage);
+
+					// vfx, sfx etc.
+					// ...
+				}
+			}
+		}
+	}
+}
+
+void ADSEnemyMelee::EndMeleeTrace()
+{
+	HitActors.Empty();
 }

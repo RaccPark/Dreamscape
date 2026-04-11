@@ -21,7 +21,7 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
-	TObjectPtr<class ACharacter> Owner;
+	TObjectPtr<class ADSCharacterPlayer> Owner;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	TObjectPtr<class UCharacterMovementComponent> CharacterMovementComponent;
@@ -37,4 +37,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
 	uint8 bIsDead : 1;
+
+protected:
+	UFUNCTION()
+	void OnOwnerDeath();
 };

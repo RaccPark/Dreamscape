@@ -31,24 +31,17 @@ void ADSSwordWeaponBase::BeginPlay()
 void ADSSwordWeaponBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-
-	if (bTraceAtive)
-	{
-		PerformTrace();
-	}
 }
 
 void ADSSwordWeaponBase::StartAttackTrace()
 {
-	bTraceAtive = true;
 	HitActors.Empty();
 }
 
 
 void ADSSwordWeaponBase::EndAttackTrace()
 {
-	bTraceAtive = false;
+	HitActors.Empty();
 }
 
 void ADSSwordWeaponBase::PerformTrace()

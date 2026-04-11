@@ -21,11 +21,9 @@ ADSEnemyCharacterBase::ADSEnemyCharacterBase()
 
 void ADSEnemyCharacterBase::TakeDamage(float DamageAmount)
 {
-	CurrentHealth -= DamageAmount;
-	if (CurrentHealth <= 0.0f)
-	{
-		OnDeath();
-	}
+
+
+	
 }
 
 // Called when the game starts or when spawned

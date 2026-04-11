@@ -2,7 +2,7 @@
 
 
 #include "Animation/DSAnimInstance.h"
-#include "GameFramework/Character.h"
+#include "Character/DSCharacterPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UDSAnimInstance::UDSAnimInstance()
@@ -15,10 +15,11 @@ void UDSAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
-	Owner = Cast<ACharacter>(GetOwningActor());
+	Owner = Cast<ADSCharacterPlayer>(GetOwningActor());
 	if (Owner)
 	{
 		CharacterMovementComponent = Owner->GetCharacterMovement();
+		Owner->OnDeathDelegate.AddUObject(this, &UDSAnimInstance::OnOwnerDeath);
 	}
 }
 
@@ -26,9 +27,19 @@ void UDSAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
+	if (bIsDead)
+	{
+		return;
+	}
+
 	if (CharacterMovementComponent)
 	{
 		Velocity = CharacterMovementComponent->Velocity;
 		GroundSpeed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
 	}
+}
+
+void UDSAnimInstance::OnOwnerDeath()
+{
+	bIsDead = true;
 }

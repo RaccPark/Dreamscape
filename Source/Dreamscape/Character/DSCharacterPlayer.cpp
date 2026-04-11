@@ -339,6 +339,16 @@ void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)
 	}
 }
 
+void ADSCharacterPlayer::OnDeath()
+{
+	if (OnDeathDelegate.IsBound())
+	{
+		OnDeathDelegate.Broadcast();
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Player has died!"));
+}
+
 void ADSCharacterPlayer::PlayRollMontage()
 {
 	if (!RollMontage)
@@ -355,6 +365,23 @@ void ADSCharacterPlayer::PlayRollMontage()
 	}
 
 	AnimInstance->Montage_Play(RollMontage);
+}
+
+void ADSCharacterPlayer::PlayHitMontage()
+{
+	if (!HitMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HitMontage is not set!"));
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimInstance is not valid!"));
+		return;
+	}
+	AnimInstance->Montage_Play(HitMontage);
 }
 
 void ADSCharacterPlayer::ProcessComboCommand()
@@ -395,6 +422,26 @@ ADSSwordWeaponBase* ADSCharacterPlayer::GetEquippedSwordWeapon() const
 		return nullptr;
 	}
 	return EquippedSwordWeapon;
+}
+
+void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
+{
+	CurrentHealth -= DamageAmount;
+	if (CurrentHealth <= 0.0f)
+	{
+		OnDeath();
+		return;
+	}
+
+	PlayHitMontage();
+
+	UE_LOG(LogTemp, Log, TEXT("ApplyDamage: %f"), DamageAmount);
+}
+
+void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
+{
+	ApplyDamage(DamageAmount);
+	LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 }
 
 void ADSCharacterPlayer::ComboActionBegin()

@@ -66,7 +66,7 @@ void ADSEnemyAIController::UpdateBlackboardValues(ADSEnemyCharacterBase* EnemyCh
 
 	if (DistanceToPlayer <= ChaseRange)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Player Detected! Distance: %f"), DistanceToPlayer);
+		// UE_LOG(LogTemp, Warning, TEXT("Player Detected! Distance: %f"), DistanceToPlayer);
 		// 탐지 범위 안일 때
 		BBComponent->SetValueAsObject(BBKeys::TargetActor, PlayerPawn);
 

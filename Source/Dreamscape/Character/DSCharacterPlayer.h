@@ -4,13 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Character/DSCharacterBase.h"
+#include "Interface/DSDamageableInterface.h"
 #include "DSCharacterPlayer.generated.h"
 
 /**
  * 
  */
+DECLARE_MULTICAST_DELEGATE(FOnDeathDelegate);
+
 UCLASS()
-class DREAMSCAPE_API ADSCharacterPlayer : public ADSCharacterBase
+class DREAMSCAPE_API ADSCharacterPlayer : public ADSCharacterBase, public IDSDamageableInterface
 {
 	GENERATED_BODY()
 	
@@ -71,6 +74,8 @@ protected:
 
 	void SwordAttack(const struct FInputActionValue& Value);
 
+	virtual void OnDeath() override;
+
 	float DefaultMaxWalkSpeed;
 	float MaxWalkSpeed;
 
@@ -101,13 +106,17 @@ public:
 	UCameraComponent* GetCamera();
 
 protected:
-	// Roll Action Section
+	// Animation Montage Section
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TObjectPtr<class UAnimMontage> RollMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TObjectPtr<class UAnimMontage> HitMontage;
 
 public:
 	// Animation Montage Play Section
 	void PlayRollMontage();
+	void PlayHitMontage();
 
 	// Combo Action Section
 protected:
@@ -142,4 +151,11 @@ public:
 
 	class ADSSwordWeaponBase* GetEquippedSwordWeapon() const;
 
+	// Damageable Interface Section
+public:
+	virtual void ApplyDamage(float DamageAmount) override;
+	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
+
+public:
+		FOnDeathDelegate OnDeathDelegate;
 };

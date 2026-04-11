@@ -54,6 +54,11 @@ ADSCharacterBase::ADSCharacterBase()
 	{
 		CharacterControlManager.Add(ECharacterControlType::Quarter, CharacterControlDataRef.Object);
 	}
+
+	// Set Default Character Stats
+	MaxHealth = 4.0f;
+	CurrentHealth = MaxHealth;
+
 }
 
 // Called when the game starts or when spawned
@@ -72,5 +77,12 @@ void ADSCharacterBase::SetCharacterControlData(const UDSCharacterControlData* Ch
 	GetCharacterMovement()->bOrientRotationToMovement = CharacterControlData->bOrientRotationToMovement;
 	GetCharacterMovement()->bUseControllerDesiredRotation = CharacterControlData->bUseControllerDesiredRotation;
 	GetCharacterMovement()->RotationRate = CharacterControlData->RotationRate;
+}
+
+void ADSCharacterBase::OnDeath()
+{
+	// Disable character movement & collision
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 

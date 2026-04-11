@@ -7,6 +7,7 @@
 
 void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
+
 	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
 	if (Player)
 	{
@@ -18,6 +19,20 @@ void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UA
 		}
 	}
 }
+
+void UDSAnimNotifyState_Attack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime)
+{
+	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
+	if (Player)
+	{
+		if (ADSSwordWeaponBase* Weapon = Player->GetEquippedSwordWeapon())
+		{
+			Weapon->PerformTrace();
+		}
+	}
+}
+
+
 
 void UDSAnimNotifyState_Attack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
