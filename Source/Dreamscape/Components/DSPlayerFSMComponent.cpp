@@ -9,6 +9,7 @@
 #include "Components/PlayerStateBase/DSPlayerState_Walk.h"
 #include "Components/PlayerStateBase/DSPlayerState_Roll.h"
 #include "Components/PlayerStateBase/DSPlayerState_SwordAttack.h"
+#include "Components/PlayerStateBase/DSPlayerState_Death.h"
 
 // Sets default values for this component's properties
 UDSPlayerFSMComponent::UDSPlayerFSMComponent()
@@ -39,6 +40,9 @@ void UDSPlayerFSMComponent::ChangeState(EPlayerStateType NewType)
 		CurrentState->Exit();
 	}
 
+	// 이전 상태 저장
+	PreviousStateType = CurrentStateType;
+
 	// 새로운 상태 진입
 	CurrentStateType = NewType;
 	CurrentState = GetState(NewType);
@@ -50,11 +54,11 @@ void UDSPlayerFSMComponent::ChangeState(EPlayerStateType NewType)
 
 }
 
-void UDSPlayerFSMComponent::HandleMoveInput(const FVector2D& Input)
+void UDSPlayerFSMComponent::HandleMoveInput(const struct FInputActionValue& Value)
 {
 	if (CurrentState)
 	{
-		CurrentState->OnMove(Input);
+		CurrentState->OnMove(Value);
 	}
 }
 
@@ -90,9 +94,22 @@ void UDSPlayerFSMComponent::HandleComboActionEnd()
 	}
 }
 
+void UDSPlayerFSMComponent::HandleDeath()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnDeath();
+	}
+}
+
 EPlayerStateType UDSPlayerFSMComponent::GetCurrentStateType() const
 {
 	return CurrentStateType;
+}
+
+EPlayerStateType UDSPlayerFSMComponent::GetPreviousStateType() const
+{
+	return PreviousStateType;
 }
 
 
@@ -103,11 +120,14 @@ void UDSPlayerFSMComponent::BeginPlay()
 
 	OwnerCharacter = Cast<ADSCharacterPlayer>(GetOwner());
 	
+	// State Class 생성
 	CreateState<UDSPlayerState_Idle>(EPlayerStateType::EPS_Idle);
 	CreateState<UDSPlayerState_Walk>(EPlayerStateType::EPS_Walk);
 	CreateState<UDSPlayerState_Roll>(EPlayerStateType::EPS_Roll);
 	CreateState<UDSPlayerState_SwordAttack>(EPlayerStateType::EPS_SwordAttack);
+	CreateState<UDSPlayerState_Death>(EPlayerStateType::EPS_Death);
 
+	// 초기 상태 설정
 	ChangeState(EPlayerStateType::EPS_Idle);
 }
 

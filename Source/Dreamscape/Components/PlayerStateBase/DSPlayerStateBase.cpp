@@ -30,9 +30,9 @@ void UDSPlayerStateBase::Exit()
 	UE_LOG(LogTemp, Log, TEXT("Exiting state: %s"), *GetClass()->GetName());
 }
 
-void UDSPlayerStateBase::OnMove(const FVector2D& Value)
+void UDSPlayerStateBase::OnMove(const struct FInputActionValue& Value)
 {
-	
+
 }
 
 void UDSPlayerStateBase::OnRoll()
@@ -48,4 +48,14 @@ void UDSPlayerStateBase::OnSwordAttack()
 void UDSPlayerStateBase::OnComboActionEnd()
 {
 
+}
+
+void UDSPlayerStateBase::OnDeath()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Death);
 }

@@ -20,6 +20,7 @@ void UDSPlayerState_SwordAttack::Enter()
 		PlayerCharacter->SetEquippedWeaponSocket("RightWeaponEquipSocket");
 	}
 
+	PlayerCharacter->RotateCharacterToMouseCursor();
 	PlayerCharacter->ProcessComboCommand();
 }
 void UDSPlayerState_SwordAttack::Update(float DeltaTime)

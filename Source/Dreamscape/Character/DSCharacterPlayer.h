@@ -62,7 +62,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	float TurnInterpSpeed;
 	
-	void Move(const struct FInputActionValue& Value);
+	void HandleMove(const struct FInputActionValue& Value);	// 기본 움직임 Input을 받으면 처음에는 여기로
 	void Look(const struct FInputActionValue& Value);
 
 	void StartRoll(const struct FInputActionValue& Value);
@@ -73,8 +73,6 @@ protected:
 	void OnMouseInput(const struct FInputActionValue& Value);
 
 	void SwordAttack(const struct FInputActionValue& Value);
-
-	virtual void OnDeath() override;
 
 	float DefaultMaxWalkSpeed;
 	float MaxWalkSpeed;
@@ -102,23 +100,29 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSPlayerFSMComponent> PlayerFSMComponent;
 
+	// Inventory Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSInventoryComponent> InventoryComponent;
+
 public:
 	UCameraComponent* GetCamera();
 
+// Animation Montage Section
 protected:
-	// Animation Montage Section
+	
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TObjectPtr<class UAnimMontage> RollMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TObjectPtr<class UAnimMontage> HitMontage;
 
+// Animation Montage Play Section
 public:
-	// Animation Montage Play Section
 	void PlayRollMontage();
 	void PlayHitMontage();
 
-	// Combo Action Section
+
+// Combo Action Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	TObjectPtr<class UAnimMontage> SwordAttackMontage;
@@ -137,9 +141,15 @@ protected:
 	FTimerHandle ComboTimerHandle;
 	bool HasNextComboCommand;
 public:
+	void Move(const struct FInputActionValue& Value);
+
+	void RotateCharacterToMouseCursor();
 	void ProcessComboCommand();
+
+	virtual void OnDeath() override;
 	
-	// Weapon Section
+
+// Weapon Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ADSSwordWeaponBase> SwordWeaponToEquip;
@@ -147,15 +157,26 @@ protected:
 	class ADSSwordWeaponBase* EquippedSwordWeapon;
 
 public:
+	// 무기 장착
+	void EquipSwordWeapon(const class UDSWeaponItemData* NewWeaponData);
+
+public:
+	// 소켓 위치에 따른 무기 장착
 	void SetEquippedWeaponSocket(FName SocketName);
 
 	class ADSSwordWeaponBase* GetEquippedSwordWeapon() const;
 
-	// Damageable Interface Section
+
+// Damageable Interface Section
 public:
 	virtual void ApplyDamage(float DamageAmount) override;
 	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
 
 public:
-		FOnDeathDelegate OnDeathDelegate;
+	FOnDeathDelegate OnDeathDelegate;
+
+// Inventory Test Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSWeaponItemData> TestWeaponItemData;
 };

@@ -6,6 +6,7 @@
 #include "Character/DSCharacterPlayer.h"
 #include "DrawDebugHelpers.h"
 #include "Interface/DSDamageableInterface.h"
+#include "Weapon/Data/DSWeaponItemData.h"
 
 // Sets default values
 ADSSwordWeaponBase::ADSSwordWeaponBase()
@@ -16,8 +17,17 @@ ADSSwordWeaponBase::ADSSwordWeaponBase()
 	SwordWeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordWeaponMesh"));
 	SetRootComponent(SwordWeaponMesh);
 	SwordWeaponMesh->SetCollisionProfileName(TEXT("NoCollision"));
+}
 
-	bTraceAtive = false;
+void ADSSwordWeaponBase::InitializeWeapon(const UDSWeaponItemData* WeaponData)
+{
+	if (WeaponData)
+	{
+		DamageAmount = WeaponData->DamageAmount;
+		AttackRate = WeaponData->AttackRate;
+
+		UE_LOG(LogTemp, Warning, TEXT("Weapon Initialized: Damage = %f, AttackRate = %f"), DamageAmount, AttackRate);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -89,7 +99,7 @@ void ADSSwordWeaponBase::PerformTrace()
 				// Example damage application
 				FVector KnockbackDirection = (HitActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 				FVector KnockbackNoHeightDirection = FVector(KnockbackDirection.X, KnockbackDirection.Y, 0.f).GetSafeNormal();
-				DamageableActor->ApplyDamageWithKnockback(1.f, KnockbackNoHeightDirection, 250.f); // Example knockback
+				DamageableActor->ApplyDamageWithKnockback(DamageAmount, KnockbackNoHeightDirection, 250.f); // Example knockback
 			}
 		}
 	}

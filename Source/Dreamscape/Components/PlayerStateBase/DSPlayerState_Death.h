@@ -4,22 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "Components/PlayerStateBase/DSPlayerStateBase.h"
-#include "DSPlayerState_Idle.generated.h"
+#include "DSPlayerState_Death.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DREAMSCAPE_API UDSPlayerState_Idle : public UDSPlayerStateBase
+class DREAMSCAPE_API UDSPlayerState_Death : public UDSPlayerStateBase
 {
 	GENERATED_BODY()
-	
 public:
 	virtual void Enter() override;
 	virtual void Update(float DeltaTime) override;
 	virtual void Exit() override;
 
-	virtual void OnMove(const struct FInputActionValue& Value) override;
-	virtual void OnRoll() override;
-	virtual void OnSwordAttack() override;
+
 };

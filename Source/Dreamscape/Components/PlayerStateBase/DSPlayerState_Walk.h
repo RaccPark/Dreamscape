@@ -19,6 +19,7 @@ public:
 	virtual void Update(float DeltaTime) override;
 	virtual void Exit() override;
 
+	virtual void OnMove(const struct FInputActionValue& Value) override;
 	virtual void OnRoll() override;
 	virtual void OnSwordAttack() override;
 	

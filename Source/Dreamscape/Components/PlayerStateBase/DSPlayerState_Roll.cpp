@@ -4,6 +4,7 @@
 #include "Components/PlayerStateBase/DSPlayerState_Roll.h"
 #include "Character/DSCharacterPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/DSPlayerFSMComponent.h"
 #include "Animation/AnimInstance.h"
 
 void UDSPlayerState_Roll::Enter()

@@ -15,6 +15,8 @@ public:
 	// Sets default values for this actor's properties
 	ADSSwordWeaponBase();
 
+	virtual void InitializeWeapon(const class UDSWeaponItemData* WeaponData);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -22,13 +24,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<class UStaticMeshComponent> SwordWeaponMesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	float DamageAmount;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	float AttackRate;
-
-	bool bTraceAtive;
 
 	TArray<AActor*> HitActors;
 

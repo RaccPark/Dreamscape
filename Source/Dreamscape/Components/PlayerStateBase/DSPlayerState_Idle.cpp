@@ -18,7 +18,7 @@ void UDSPlayerState_Idle::Exit()
 {
 }
 
-void UDSPlayerState_Idle::OnMove(const FVector2D& Value)
+void UDSPlayerState_Idle::OnMove(const struct FInputActionValue& Value)
 {
 	if (!PlayerCharacter || !OwnerFSMComponent)
 	{

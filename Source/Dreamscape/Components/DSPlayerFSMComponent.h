@@ -15,6 +15,7 @@ enum class EPlayerStateType : uint8
 	EPS_Walk,
 	EPS_Roll,
 	EPS_SwordAttack,
+	EPS_Death,
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -29,12 +30,14 @@ public:
 	UDSPlayerStateBase* GetState(EPlayerStateType StateType) const;
 	void ChangeState(EPlayerStateType NewType);
 
-	void HandleMoveInput(const FVector2D& Input);
+	void HandleMoveInput(const struct FInputActionValue& Value);
 	void HandleRollInput();
 	void HandleSwordAttackInput();
 	void HandleComboActionEnd();
+	void HandleDeath();
 
 	EPlayerStateType GetCurrentStateType() const;
+	EPlayerStateType GetPreviousStateType() const;
 
 protected:
 	// Called when the game starts
@@ -58,11 +61,14 @@ private:
 	UDSPlayerStateBase* RollState;
 	UPROPERTY()
 	UDSPlayerStateBase* SwordAttack;
+	UPROPERTY()
+	UDSPlayerStateBase* DeathState;
 
 	UPROPERTY()
 	TObjectPtr<class ADSCharacterPlayer> OwnerCharacter;
 
 	EPlayerStateType CurrentStateType;
+	EPlayerStateType PreviousStateType;
 
 	template<typename T>
 	T* CreateState(EPlayerStateType Type)

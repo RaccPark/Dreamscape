@@ -21,11 +21,12 @@ public:
 	virtual void Update(float DeltaTime);
 	virtual void Exit();
 
-	virtual void OnMove(const FVector2D& Value);
+	virtual void OnMove(const struct FInputActionValue& Value);
 	virtual void OnRoll();
 	virtual void OnSwordAttack();
 
 	virtual void OnComboActionEnd();
+	virtual void OnDeath();
 
 protected:
 	UPROPERTY()
