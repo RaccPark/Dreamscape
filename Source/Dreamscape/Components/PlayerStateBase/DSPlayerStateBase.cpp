@@ -40,6 +40,11 @@ void UDSPlayerStateBase::OnRoll()
 	UE_LOG(LogTemp, Log, TEXT("Roll input received in state: %s"), *GetClass()->GetName());
 }
 
+void UDSPlayerStateBase::OnFall()
+{
+	UE_LOG(LogTemp, Log, TEXT("Fall event received in state: %s"), *GetClass()->GetName());
+}
+
 void UDSPlayerStateBase::OnSwordAttack()
 {
 	UE_LOG(LogTemp, Log, TEXT("Sword attack input received in state: %s"), *GetClass()->GetName());

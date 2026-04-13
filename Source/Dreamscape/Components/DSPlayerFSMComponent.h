@@ -14,6 +14,7 @@ enum class EPlayerStateType : uint8
 	EPS_Idle,
 	EPS_Walk,
 	EPS_Roll,
+	EPS_Fall,
 	EPS_SwordAttack,
 	EPS_Death,
 };
@@ -34,6 +35,7 @@ public:
 	void HandleRollInput();
 	void HandleSwordAttackInput();
 	void HandleComboActionEnd();
+	void HandleFall();
 	void HandleDeath();
 
 	EPlayerStateType GetCurrentStateType() const;

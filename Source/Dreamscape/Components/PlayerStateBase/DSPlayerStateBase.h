@@ -23,6 +23,7 @@ public:
 
 	virtual void OnMove(const struct FInputActionValue& Value);
 	virtual void OnRoll();
+	virtual void OnFall();
 	virtual void OnSwordAttack();
 
 	virtual void OnComboActionEnd();

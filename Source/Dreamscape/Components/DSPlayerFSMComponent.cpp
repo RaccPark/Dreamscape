@@ -94,6 +94,14 @@ void UDSPlayerFSMComponent::HandleComboActionEnd()
 	}
 }
 
+void UDSPlayerFSMComponent::HandleFall()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnFall();
+	}
+}
+
 void UDSPlayerFSMComponent::HandleDeath()
 {
 	if (CurrentState)
@@ -124,6 +132,7 @@ void UDSPlayerFSMComponent::BeginPlay()
 	CreateState<UDSPlayerState_Idle>(EPlayerStateType::EPS_Idle);
 	CreateState<UDSPlayerState_Walk>(EPlayerStateType::EPS_Walk);
 	CreateState<UDSPlayerState_Roll>(EPlayerStateType::EPS_Roll);
+
 	CreateState<UDSPlayerState_SwordAttack>(EPlayerStateType::EPS_SwordAttack);
 	CreateState<UDSPlayerState_Death>(EPlayerStateType::EPS_Death);
 

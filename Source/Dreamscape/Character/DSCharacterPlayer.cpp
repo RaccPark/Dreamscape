@@ -290,6 +290,19 @@ void ADSCharacterPlayer::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(LookAxisVector.Y);
 }
 
+void ADSCharacterPlayer::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+	
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		if (PlayerFSMComponent)
+		{
+			PlayerFSMComponent->HandleFall();
+		}
+	}
+}
+
 void ADSCharacterPlayer::StartRoll(const FInputActionValue& Value)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Start Roll"));

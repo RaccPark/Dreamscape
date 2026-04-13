@@ -38,6 +38,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
 	uint8 bIsDead : 1;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
+	uint8 bIsFalling : 1;
+
 protected:
 	UFUNCTION()
 	void OnOwnerDeath();

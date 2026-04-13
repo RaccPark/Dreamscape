@@ -65,6 +65,8 @@ protected:
 	void HandleMove(const struct FInputActionValue& Value);	// 기본 움직임 Input을 받으면 처음에는 여기로
 	void Look(const struct FInputActionValue& Value);
 
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
+
 	void StartRoll(const struct FInputActionValue& Value);
 	void StopRoll(const struct FInputActionValue& Value);
 

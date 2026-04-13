@@ -9,6 +9,7 @@ UDSAnimInstance::UDSAnimInstance()
 {
 	MovingThreshould = 3.0f;
 	bIsDead = false;
+	bIsFalling = false;
 }
 
 void UDSAnimInstance::NativeInitializeAnimation()
@@ -34,8 +35,12 @@ void UDSAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (CharacterMovementComponent)
 	{
+		// Velocity
 		Velocity = CharacterMovementComponent->Velocity;
 		GroundSpeed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
+
+		// Falling
+		bIsFalling = CharacterMovementComponent->IsFalling();
 	}
 }
 
