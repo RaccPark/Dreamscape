@@ -509,7 +509,7 @@ void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
 		return;
 	}
 
-	PlayHitMontage();
+	PlayerFSMComponent->HandleHit();
 
 	UE_LOG(LogTemp, Log, TEXT("ApplyDamage: %f"), DamageAmount);
 }

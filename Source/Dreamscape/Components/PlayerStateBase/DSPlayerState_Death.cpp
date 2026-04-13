@@ -23,3 +23,8 @@ void UDSPlayerState_Death::Exit()
 {
 
 }
+
+void UDSPlayerState_Death::OnHit()
+{
+	UE_LOG(LogTemp, Warning, TEXT("이미 죽음."));
+}

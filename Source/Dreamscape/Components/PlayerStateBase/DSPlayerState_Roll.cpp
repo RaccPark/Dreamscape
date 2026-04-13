@@ -31,4 +31,9 @@ void UDSPlayerState_Roll::Exit()
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] Exiting Roll state."));
 }
 
+void UDSPlayerState_Roll::OnHit()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] 회피"));
+}
+
  

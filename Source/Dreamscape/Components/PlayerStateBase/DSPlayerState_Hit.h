@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/PlayerStateBase/DSPlayerStateBase.h"
-#include "DSPlayerState_Roll.generated.h"
+#include "DSPlayerState_Hit.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DREAMSCAPE_API UDSPlayerState_Roll : public UDSPlayerStateBase
+class DREAMSCAPE_API UDSPlayerState_Hit : public UDSPlayerStateBase
 {
 	GENERATED_BODY()
 	

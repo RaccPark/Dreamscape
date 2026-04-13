@@ -8,6 +8,8 @@
 #include "Components/PlayerStateBase/DSPlayerState_Idle.h"
 #include "Components/PlayerStateBase/DSPlayerState_Walk.h"
 #include "Components/PlayerStateBase/DSPlayerState_Roll.h"
+#include "Components/PlayerStateBase/DSPlayerState_Fall.h"
+#include "Components/PlayerStateBase/DSPlayerState_Hit.h"
 #include "Components/PlayerStateBase/DSPlayerState_SwordAttack.h"
 #include "Components/PlayerStateBase/DSPlayerState_Death.h"
 
@@ -40,12 +42,10 @@ void UDSPlayerFSMComponent::ChangeState(EPlayerStateType NewType)
 		CurrentState->Exit();
 	}
 
-	// 이전 상태 저장
-	PreviousStateType = CurrentStateType;
+	StateStack.Empty();
+	StateStack.Push(NewType);
 
-	// 새로운 상태 진입
-	CurrentStateType = NewType;
-	CurrentState = GetState(NewType);
+	UpdateCurrentStatePointer();
 
 	if (CurrentState)
 	{
@@ -68,7 +68,7 @@ void UDSPlayerFSMComponent::HandleRollInput()
 
 	if (CurrentState)
 	{
-		if (CurrentStateType == EPlayerStateType::EPS_Roll)
+		if (GetCurrentStateType() == EPlayerStateType::EPS_Roll)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerFSMComponent] Already in Roll state. Ignoring roll input."));
 			return;
@@ -102,6 +102,14 @@ void UDSPlayerFSMComponent::HandleFall()
 	}
 }
 
+void UDSPlayerFSMComponent::HandleHit()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnHit();
+	}
+}
+
 void UDSPlayerFSMComponent::HandleDeath()
 {
 	if (CurrentState)
@@ -110,14 +118,39 @@ void UDSPlayerFSMComponent::HandleDeath()
 	}
 }
 
+void UDSPlayerFSMComponent::PushPlayerState(EPlayerStateType NewType)
+{
+	if (CurrentState)
+	{
+		CurrentState->Exit();
+	}
+
+	StateStack.Push(NewType);
+	UpdateCurrentStatePointer();
+
+	if (CurrentState)
+	{
+		CurrentState->Enter();
+	}
+}
+
+void UDSPlayerFSMComponent::PopPlayerState()
+{
+
+}
+
 EPlayerStateType UDSPlayerFSMComponent::GetCurrentStateType() const
 {
-	return CurrentStateType;
+	return StateStack.Num() > 0 ? StateStack.Last() : EPlayerStateType::EPS_Idle;
 }
 
 EPlayerStateType UDSPlayerFSMComponent::GetPreviousStateType() const
 {
-	return PreviousStateType;
+	if (StateStack.Num() > 1)
+	{
+		return StateStack[StateStack.Num() - 2];
+	}
+	return EPlayerStateType::EPS_Idle;
 }
 
 
@@ -132,7 +165,8 @@ void UDSPlayerFSMComponent::BeginPlay()
 	CreateState<UDSPlayerState_Idle>(EPlayerStateType::EPS_Idle);
 	CreateState<UDSPlayerState_Walk>(EPlayerStateType::EPS_Walk);
 	CreateState<UDSPlayerState_Roll>(EPlayerStateType::EPS_Roll);
-
+	CreateState<UDSPlayerState_Fall>(EPlayerStateType::EPS_Fall);
+	CreateState<UDSPlayerState_Hit>(EPlayerStateType::EPS_Hit);
 	CreateState<UDSPlayerState_SwordAttack>(EPlayerStateType::EPS_SwordAttack);
 	CreateState<UDSPlayerState_Death>(EPlayerStateType::EPS_Death);
 
@@ -149,6 +183,18 @@ void UDSPlayerFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	if (CurrentState)
 	{
 		CurrentState->Update(DeltaTime);
+	}
+}
+
+void UDSPlayerFSMComponent::UpdateCurrentStatePointer()
+{
+	if (StateStack.Num() > 0)
+	{
+		CurrentState = GetState(StateStack.Last());
+	}
+	else
+	{
+		CurrentState = nullptr;
 	}
 }
 

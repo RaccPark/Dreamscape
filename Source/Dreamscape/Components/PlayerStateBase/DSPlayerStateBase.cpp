@@ -45,6 +45,21 @@ void UDSPlayerStateBase::OnFall()
 	UE_LOG(LogTemp, Log, TEXT("Fall event received in state: %s"), *GetClass()->GetName());
 }
 
+void UDSPlayerStateBase::OnHit()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Hit);
+}
+
 void UDSPlayerStateBase::OnSwordAttack()
 {
 	UE_LOG(LogTemp, Log, TEXT("Sword attack input received in state: %s"), *GetClass()->GetName());

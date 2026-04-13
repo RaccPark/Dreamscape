@@ -18,5 +18,5 @@ public:
 	virtual void Update(float DeltaTime) override;
 	virtual void Exit() override;
 
-
+	virtual void OnHit() override;
 };

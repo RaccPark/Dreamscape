@@ -15,6 +15,7 @@ enum class EPlayerStateType : uint8
 	EPS_Walk,
 	EPS_Roll,
 	EPS_Fall,
+	EPS_Hit,
 	EPS_SwordAttack,
 	EPS_Death,
 };
@@ -36,7 +37,13 @@ public:
 	void HandleSwordAttackInput();
 	void HandleComboActionEnd();
 	void HandleFall();
+	void HandleHit();
 	void HandleDeath();
+
+	// 현재 상태를 유지한채 새로운 상태 스택 쌓기
+	void PushPlayerState(EPlayerStateType NewType);
+	// 현재 상태 종료 후 이전 상태로 복귀
+	void PopPlayerState();
 
 	EPlayerStateType GetCurrentStateType() const;
 	EPlayerStateType GetPreviousStateType() const;
@@ -56,21 +63,11 @@ private:
 	TMap<EPlayerStateType, UDSPlayerStateBase*> PlayerStates;
 
 	UPROPERTY()
-	UDSPlayerStateBase* IdleState;
-	UPROPERTY()
-	UDSPlayerStateBase* WalkState;
-	UPROPERTY()
-	UDSPlayerStateBase* RollState;
-	UPROPERTY()
-	UDSPlayerStateBase* SwordAttack;
-	UPROPERTY()
-	UDSPlayerStateBase* DeathState;
-
-	UPROPERTY()
 	TObjectPtr<class ADSCharacterPlayer> OwnerCharacter;
 
-	EPlayerStateType CurrentStateType;
-	EPlayerStateType PreviousStateType;
+	// Pushdown Automata
+	UPROPERTY(VisibleAnywhere)
+	TArray<EPlayerStateType> StateStack;
 
 	template<typename T>
 	T* CreateState(EPlayerStateType Type)
@@ -80,4 +77,6 @@ private:
 		PlayerStates.Add(Type, NewState);
 		return NewState;
 	}
+
+	void UpdateCurrentStatePointer();
 };
