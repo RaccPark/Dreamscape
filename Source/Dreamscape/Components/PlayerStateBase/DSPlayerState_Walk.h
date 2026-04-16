@@ -21,6 +21,7 @@ public:
 
 	virtual void OnMove(const struct FInputActionValue& Value) override;
 	virtual void OnRoll() override;
+	virtual void OnFall() override;
 	virtual void OnSwordAttack() override;
 	
 };

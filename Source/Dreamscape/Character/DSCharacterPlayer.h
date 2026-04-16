@@ -68,7 +68,9 @@ protected:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
 
 	void StartRoll(const struct FInputActionValue& Value);
-	void StopRoll(const struct FInputActionValue& Value);
+
+	void StartFall();
+	void StopFall();
 
 	void OnPeekStarted(const struct FInputActionValue& Value);
 	void OnPeekEnded(const struct FInputActionValue& Value);
@@ -108,6 +110,8 @@ protected:
 
 public:
 	UCameraComponent* GetCamera();
+
+	UDSPlayerFSMComponent* GetPlayerFSMComponent() const;
 
 // Animation Montage Section
 protected:
@@ -149,6 +153,7 @@ public:
 	void ProcessComboCommand();
 
 	virtual void OnDeath() override;
+	void OnRollEnd();
 	
 
 // Weapon Section

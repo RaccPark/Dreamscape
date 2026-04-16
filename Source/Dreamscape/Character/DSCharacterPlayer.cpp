@@ -176,9 +176,7 @@ void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::HandleMove);
 	// Roll
 	EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::StartRoll);
-	//EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Completed, this, &ADSCharacterPlayer::StopRoll);
-	// Look
-	//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADSCharacterPlayer::Look);
+
 	// Camera Peek
 	EnhancedInputComponent->BindAction(CameraPeekAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::OnPeekStarted);
 	EnhancedInputComponent->BindAction(CameraPeekAction, ETriggerEvent::Completed, this, &ADSCharacterPlayer::OnPeekEnded);
@@ -293,12 +291,19 @@ void ADSCharacterPlayer::Look(const FInputActionValue& Value)
 void ADSCharacterPlayer::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
-	
+
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
 		if (PlayerFSMComponent)
 		{
 			PlayerFSMComponent->HandleFall();
+		}
+	}
+	else if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking && PrevMovementMode == EMovementMode::MOVE_Falling)
+	{
+		if (PlayerFSMComponent)
+		{
+			PlayerFSMComponent->HandleLand();
 		}
 	}
 }
@@ -313,9 +318,22 @@ void ADSCharacterPlayer::StartRoll(const FInputActionValue& Value)
 	}
 }
 
-void ADSCharacterPlayer::StopRoll(const FInputActionValue& Value)
+void ADSCharacterPlayer::OnRollEnd()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Stop Roll"));
+	if (PlayerFSMComponent)
+	{
+		PlayerFSMComponent->HandleRollEnd();
+	}
+}
+
+void ADSCharacterPlayer::StartFall()
+{
+
+}
+
+void ADSCharacterPlayer::StopFall()
+{
+
 }
 
 void ADSCharacterPlayer::OnPeekStarted(const FInputActionValue& Value)
@@ -341,6 +359,17 @@ void ADSCharacterPlayer::OnMouseInput(const FInputActionValue& Value)
 		const FVector2D MouseDelta = Value.Get<FVector2D>();
 		CameraPeekComponent->AddMouseDelta(MouseDelta);
 	}
+}
+
+UDSPlayerFSMComponent* ADSCharacterPlayer::GetPlayerFSMComponent() const
+{
+	if (!PlayerFSMComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerFSMComponent is nullptr!"));
+		return nullptr;
+	}
+
+	return PlayerFSMComponent;
 }
 
 void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)
@@ -407,12 +436,20 @@ void ADSCharacterPlayer::RotateCharacterToMouseCursor()
 		return;
 	}
 
-	FHitResult HitResult;
-	bool bHit = PlayerController->GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
+	FVector WorldLocation;
+	FVector WorldDirection;
 
-	if (bHit)
+	bool bDeprojected = PlayerController->DeprojectMousePositionToWorld(WorldLocation, WorldDirection);
+	if (bDeprojected)
 	{
-		FVector LookAtVector = HitResult.ImpactPoint - GetActorLocation();
+		// 바닥 평면 (캐릭터 높이 기준)
+		float PlaneZ = GetActorLocation().Z;
+
+		// Ray vs Plane 교차 계산
+		float T = (PlaneZ - WorldLocation.Z) / WorldDirection.Z;
+		FVector HitPoint = WorldLocation + (WorldDirection * T);
+
+		FVector LookAtVector = HitPoint - GetActorLocation();
 		LookAtVector.Z = 0.f;
 
 		if (!LookAtVector.IsNearlyZero())

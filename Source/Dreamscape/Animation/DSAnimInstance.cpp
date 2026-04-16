@@ -4,6 +4,7 @@
 #include "Animation/DSAnimInstance.h"
 #include "Character/DSCharacterPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/DSPlayerFSMComponent.h"
 
 UDSAnimInstance::UDSAnimInstance()
 {
@@ -21,6 +22,11 @@ void UDSAnimInstance::NativeInitializeAnimation()
 	{
 		CharacterMovementComponent = Owner->GetCharacterMovement();
 		Owner->OnDeathDelegate.AddUObject(this, &UDSAnimInstance::OnOwnerDeath);
+		UDSPlayerFSMComponent* PlayerFSMComponent = Owner->GetPlayerFSMComponent();
+		if (PlayerFSMComponent)
+		{
+			PlayerFSMComponent->OnStateChangedDelegate.AddDynamic(this, &UDSAnimInstance::HandleStateChanged);
+		}
 	}
 }
 
@@ -47,4 +53,9 @@ void UDSAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 void UDSAnimInstance::OnOwnerDeath()
 {
 	bIsDead = true;
+}
+
+void UDSAnimInstance::HandleStateChanged(EPlayerStateType NewState)
+{
+	CurrentState = NewState;
 }

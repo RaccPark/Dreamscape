@@ -19,10 +19,5 @@ void UDSAnimNotify_RollEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequen
 		return;
 	}
 
-	UDSPlayerFSMComponent* PlayerFSM = CharacterPlayer->FindComponentByClass<UDSPlayerFSMComponent>();
-	if (!PlayerFSM)
-	{
-		return;
-	}
-	PlayerFSM->ChangeState(EPlayerStateType::EPS_Idle);
+	CharacterPlayer->OnRollEnd();
 }

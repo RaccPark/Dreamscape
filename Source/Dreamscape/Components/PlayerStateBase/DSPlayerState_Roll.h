@@ -19,5 +19,7 @@ public:
 	virtual void Update(float DeltaTime) override;
 	virtual void Exit() override;
 
+	virtual void OnRollEnd() override;
+	virtual void OnFall() override;
 	virtual void OnHit() override;
 };

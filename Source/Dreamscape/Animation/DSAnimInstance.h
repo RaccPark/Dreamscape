@@ -42,6 +42,12 @@ public:
 	uint8 bIsFalling : 1;
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
+	EPlayerStateType CurrentState;
+
 	UFUNCTION()
 	void OnOwnerDeath();
+
+	UFUNCTION()
+	void HandleStateChanged(EPlayerStateType NewState);
 };

@@ -9,6 +9,7 @@
 #include "Components/PlayerStateBase/DSPlayerState_Walk.h"
 #include "Components/PlayerStateBase/DSPlayerState_Roll.h"
 #include "Components/PlayerStateBase/DSPlayerState_Fall.h"
+#include "Components/PlayerStateBase/DSPlayerState_Land.h"
 #include "Components/PlayerStateBase/DSPlayerState_Hit.h"
 #include "Components/PlayerStateBase/DSPlayerState_SwordAttack.h"
 #include "Components/PlayerStateBase/DSPlayerState_Death.h"
@@ -78,6 +79,14 @@ void UDSPlayerFSMComponent::HandleRollInput()
 	}
 }
 
+void UDSPlayerFSMComponent::HandleRollEnd()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnRollEnd();
+	}
+}
+
 void UDSPlayerFSMComponent::HandleSwordAttackInput()
 {
 	if (CurrentState)
@@ -99,6 +108,14 @@ void UDSPlayerFSMComponent::HandleFall()
 	if (CurrentState)
 	{
 		CurrentState->OnFall();
+	}
+}
+
+void UDSPlayerFSMComponent::HandleLand()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnLand();
 	}
 }
 
@@ -136,7 +153,23 @@ void UDSPlayerFSMComponent::PushPlayerState(EPlayerStateType NewType)
 
 void UDSPlayerFSMComponent::PopPlayerState()
 {
+	if (StateStack.Num() <= 1)
+	{
+		return;
+	}
 
+	if (CurrentState)
+	{
+		CurrentState->Exit();
+	}
+
+	StateStack.Pop();
+	UpdateCurrentStatePointer();
+
+	if (CurrentState)
+	{
+		CurrentState->Enter();
+	}
 }
 
 EPlayerStateType UDSPlayerFSMComponent::GetCurrentStateType() const
@@ -166,6 +199,7 @@ void UDSPlayerFSMComponent::BeginPlay()
 	CreateState<UDSPlayerState_Walk>(EPlayerStateType::EPS_Walk);
 	CreateState<UDSPlayerState_Roll>(EPlayerStateType::EPS_Roll);
 	CreateState<UDSPlayerState_Fall>(EPlayerStateType::EPS_Fall);
+	CreateState<UDSPlayerState_Land>(EPlayerStateType::EPS_Land);
 	CreateState<UDSPlayerState_Hit>(EPlayerStateType::EPS_Hit);
 	CreateState<UDSPlayerState_SwordAttack>(EPlayerStateType::EPS_SwordAttack);
 	CreateState<UDSPlayerState_Death>(EPlayerStateType::EPS_Death);
@@ -191,6 +225,7 @@ void UDSPlayerFSMComponent::UpdateCurrentStatePointer()
 	if (StateStack.Num() > 0)
 	{
 		CurrentState = GetState(StateStack.Last());
+		OnStateChangedDelegate.Broadcast(GetCurrentStateType());
 	}
 	else
 	{

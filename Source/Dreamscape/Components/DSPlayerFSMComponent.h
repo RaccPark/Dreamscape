@@ -15,10 +15,13 @@ enum class EPlayerStateType : uint8
 	EPS_Walk,
 	EPS_Roll,
 	EPS_Fall,
+	EPS_Land,
 	EPS_Hit,
 	EPS_SwordAttack,
 	EPS_Death,
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStateChanged, EPlayerStateType, NewState);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class DREAMSCAPE_API UDSPlayerFSMComponent : public UActorComponent
@@ -34,9 +37,11 @@ public:
 
 	void HandleMoveInput(const struct FInputActionValue& Value);
 	void HandleRollInput();
+	void HandleRollEnd();
 	void HandleSwordAttackInput();
 	void HandleComboActionEnd();
 	void HandleFall();
+	void HandleLand();
 	void HandleHit();
 	void HandleDeath();
 
@@ -79,4 +84,7 @@ private:
 	}
 
 	void UpdateCurrentStatePointer();
+
+public:
+	FOnStateChanged OnStateChangedDelegate;
 };

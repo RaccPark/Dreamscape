@@ -32,7 +32,17 @@ void UDSPlayerState_Walk::OnRoll()
 	{
 		return;
 	}
-	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Roll);
+	OwnerFSMComponent->PushPlayerState(EPlayerStateType::EPS_Roll);
+}
+
+void UDSPlayerState_Walk::OnFall()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Fall);
 }
 
 void UDSPlayerState_Walk::OnSwordAttack()

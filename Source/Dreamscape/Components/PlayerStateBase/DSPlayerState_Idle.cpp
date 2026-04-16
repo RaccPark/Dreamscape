@@ -36,8 +36,18 @@ void UDSPlayerState_Idle::OnRoll()
 		return;
 	}
 
-	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Roll);
+	OwnerFSMComponent->PushPlayerState(EPlayerStateType::EPS_Roll);
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Idle] Transitioned to Roll state."));
+}
+
+void UDSPlayerState_Idle::OnFall()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+	
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Fall);
 }
 
 void UDSPlayerState_Idle::OnSwordAttack()

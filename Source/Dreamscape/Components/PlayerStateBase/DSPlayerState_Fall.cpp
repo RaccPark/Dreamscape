@@ -2,6 +2,7 @@
 
 
 #include "Components/PlayerStateBase/DSPlayerState_Fall.h"
+#include "Components/DSPlayerFSMComponent.h"
 
 void UDSPlayerState_Fall::Enter()
 {
@@ -13,6 +14,16 @@ void UDSPlayerState_Fall::Update(float DeltaTime)
 
 void UDSPlayerState_Fall::Exit()
 {
+}
+
+void UDSPlayerState_Fall::OnLand()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
 }
 
 void UDSPlayerState_Fall::OnSwordAttack()

@@ -40,9 +40,18 @@ void UDSPlayerStateBase::OnRoll()
 	UE_LOG(LogTemp, Log, TEXT("Roll input received in state: %s"), *GetClass()->GetName());
 }
 
+void UDSPlayerStateBase::OnRollEnd()
+{
+
+}
+
 void UDSPlayerStateBase::OnFall()
 {
 	UE_LOG(LogTemp, Log, TEXT("Fall event received in state: %s"), *GetClass()->GetName());
+}
+
+void UDSPlayerStateBase::OnLand()
+{
 }
 
 void UDSPlayerStateBase::OnHit()
