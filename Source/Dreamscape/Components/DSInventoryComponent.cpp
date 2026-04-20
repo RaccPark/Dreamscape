@@ -5,6 +5,8 @@
 #include "Components/Inventory/DSItemData.h"
 #include "Components/Inventory/DSInventorySlot.h"
 
+#include "Character/DSCharacterPlayer.h"
+
 // Sets default values for this component's properties
 UDSInventoryComponent::UDSInventoryComponent()
 {
@@ -13,8 +15,9 @@ UDSInventoryComponent::UDSInventoryComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	MaxWeaponSlots = 5;
-	MaxCollectibleSlots = 20;
+	MaxCollectibleSlots = 12;
 	CurrentCurrency = 0;
+	CurrentWeaponSlotIndex = 0;
 }
 
 
@@ -26,8 +29,6 @@ void UDSInventoryComponent::BeginPlay()
 	// 고정 크기만큼 슬롯 배열 초기화
 	WeaponSlots.SetNum(MaxWeaponSlots);
 	CollectibleSlots.SetNum(MaxCollectibleSlots);
-
-
 }
 
 bool UDSInventoryComponent::AddItem(UDSItemData* ItemData, int32 Quantity)
@@ -105,6 +106,43 @@ bool UDSInventoryComponent::SpendCurrency(int32 Amount)
 int32 UDSInventoryComponent::GetCurrency() const
 {
 	return CurrentCurrency;
+}
+
+void UDSInventoryComponent::EquipWeapon(int32 SlotIndex)
+{
+	if (!WeaponSlots.IsValidIndex(SlotIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Invalid weapon slot index: %d"), SlotIndex);
+		return;
+	}
+
+	const FInventorySlot& TargetSlot = WeaponSlots[SlotIndex];
+
+	if (TargetSlot.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon slot %d is empty."), SlotIndex);
+		return;
+	}
+
+	CurrentWeapon = TargetSlot.ItemData;
+	CurrentWeaponSlotIndex = SlotIndex;
+
+	if (CurrentWeapon)
+	{
+		ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+		if (!OwnerCharacter)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Owner is not a character!"));
+			return;
+		}
+		CurrentWeapon->UseItem(OwnerCharacter);
+	}
+	
+}
+
+TArray<FInventorySlot>& UDSInventoryComponent::GetWeaponSlots()
+{
+	return WeaponSlots;
 }
 
 

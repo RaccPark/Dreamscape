@@ -60,6 +60,9 @@ protected:
 	TObjectPtr<class UInputAction> SwordAttackAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> PauseAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	float TurnInterpSpeed;
 	
 	void HandleMove(const struct FInputActionValue& Value);	// 기본 움직임 Input을 받으면 처음에는 여기로
@@ -77,6 +80,8 @@ protected:
 	void OnMouseInput(const struct FInputActionValue& Value);
 
 	void SwordAttack(const struct FInputActionValue& Value);
+
+	void OnPausePressed(const struct FInputActionValue& Value);
 
 	float DefaultMaxWalkSpeed;
 	float MaxWalkSpeed;
@@ -112,6 +117,10 @@ public:
 	UCameraComponent* GetCamera();
 
 	UDSPlayerFSMComponent* GetPlayerFSMComponent() const;
+
+	class UInputMappingContext* GetDefaultMappingContext() const;
+
+	class UDSInventoryComponent* GetInventoryComponent() const;
 
 // Animation Montage Section
 protected:
@@ -185,5 +194,10 @@ public:
 // Inventory Test Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UDSWeaponItemData> TestWeaponItemData;
+	TObjectPtr<class UDSWeaponItemData> TestWeaponItemData00;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSWeaponItemData> TestWeaponItemData01;
+
+
 };

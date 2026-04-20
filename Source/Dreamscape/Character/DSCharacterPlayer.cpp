@@ -5,6 +5,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 
+#include "GameMode/DSPlayerController.h"
+
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/DefaultPawn.h"
 #include "GameFramework/PlayerController.h"
@@ -64,6 +66,11 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	if (InputActionMousePositionRef.Object)
 	{
 		SwordAttackAction = InputActionSwordAttackActionRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionPauseActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_Pause.IA_Pause'"));
+	if (InputActionPauseActionRef.Object)
+	{
+		PauseAction = InputActionPauseActionRef.Object;
 	}
 
 	// Default Mesh & Animation Setting
@@ -145,13 +152,14 @@ void ADSCharacterPlayer::BeginPlay()
 	SetCharacterControl(ECharacterControlType::Quarter);
 
 	// Inventory Test
-	if (TestWeaponItemData && InventoryComponent)
+	if (TestWeaponItemData00 && InventoryComponent)
 	{
-		bool bResult = InventoryComponent->AddItem(TestWeaponItemData, 1);
+		bool bResult = InventoryComponent->AddItem(TestWeaponItemData00, 1);
+		InventoryComponent->AddItem(TestWeaponItemData01, 1);
 
 		if (bResult)
 		{
-			EquipSwordWeapon(TestWeaponItemData);
+			EquipSwordWeapon(TestWeaponItemData00);
 			UE_LOG(LogTemp, Warning, TEXT("Item added to inventory successfully."));
 		}
 		else
@@ -184,6 +192,9 @@ void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	// Attack
 	EnhancedInputComponent->BindAction(SwordAttackAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::SwordAttack);
+
+	// Pause(Open Menu)
+	EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::OnPausePressed);
 }
 
 void ADSCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
@@ -370,6 +381,25 @@ UDSPlayerFSMComponent* ADSCharacterPlayer::GetPlayerFSMComponent() const
 	}
 
 	return PlayerFSMComponent;
+}
+
+UInputMappingContext* ADSCharacterPlayer::GetDefaultMappingContext() const
+{
+	return DefaultMappingContext;
+}
+
+UDSInventoryComponent* ADSCharacterPlayer::GetInventoryComponent() const
+{
+	return InventoryComponent;
+}
+
+void ADSCharacterPlayer::OnPausePressed(const FInputActionValue& Value)
+{
+	ADSPlayerController* PlayerController = Cast<ADSPlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->OnPausePressed();
+	}
 }
 
 void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)

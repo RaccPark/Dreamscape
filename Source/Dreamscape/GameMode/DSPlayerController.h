@@ -14,4 +14,25 @@ class DREAMSCAPE_API ADSPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext> PasueInputMappingContext;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext>DefaultInputMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ResumeAction;
+
+protected:
+	void SetupInputComponent() override;
+
+public:
+	void OnPausePressed();
+
+	class UInputMappingContext* GetPauseInputMappingContext() const;
+	class UInputMappingContext* GetDefaultInputMappingContext() const;
+
 };

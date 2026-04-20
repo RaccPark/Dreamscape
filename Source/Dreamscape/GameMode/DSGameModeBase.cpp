@@ -11,7 +11,7 @@ ADSGameModeBase::ADSGameModeBase()
 		DefaultPawnClass = DefaultPawnClassRef.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerClassRef(TEXT("/Script/Dreamscape.DSPlayerController"));
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerClassRef(TEXT("/Script/Engine.Blueprint'/Game/Character/BP_PlayerController.BP_PlayerController_C'"));
 	if (PlayerControllerClassRef.Class)
 	{
 		PlayerControllerClass = PlayerControllerClassRef.Class;

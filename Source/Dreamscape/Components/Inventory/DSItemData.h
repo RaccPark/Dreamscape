@@ -29,9 +29,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	FText ItemName;
 
-	// 아이템 3D 모델
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
-	UStaticMesh* ItemMesh;
+	FText ItemDescription;
+
+	// 아이템 아이콘
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	TObjectPtr<class UTexture2D> ItemIcon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	EItemType ItemType;
