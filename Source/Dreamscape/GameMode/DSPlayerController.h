@@ -21,7 +21,7 @@ protected:
 	TObjectPtr<class UInputMappingContext> PasueInputMappingContext;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputMappingContext>DefaultInputMappingContext;
+	TObjectPtr<class UInputMappingContext> DefaultInputMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ResumeAction;

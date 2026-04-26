@@ -29,6 +29,8 @@
 
 #include "Components/DSInventoryComponent.h"
 
+#include "Components/DSInteractionComponent.h"
+
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
 	// Input
@@ -72,6 +74,11 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	{
 		PauseAction = InputActionPauseActionRef.Object;
 	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionInteractActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_Interact.IA_Interact'"));
+	if (InputActionInteractActionRef.Object)
+	{
+		InteractAction = InputActionInteractActionRef.Object;
+	}
 
 	// Default Mesh & Animation Setting
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> DefaultSkeletonMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Fab/Free_Animated_Low_Poly_Cartoon_Skeleton/free_animated_low_poly_cartoon_skeleton.free_animated_low_poly_cartoon_skeleton'"));
@@ -113,6 +120,9 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 
 	// Player Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UDSInventoryComponent>(TEXT("InventoryComponent"));
+
+	// Player Interaction Component
+	InteractionComponent = CreateDefaultSubobject<UDSInteractionComponent>(TEXT("InteractionComponent"));
 	
 	// Player Movement Settings
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
@@ -152,14 +162,14 @@ void ADSCharacterPlayer::BeginPlay()
 	SetCharacterControl(ECharacterControlType::Quarter);
 
 	// Inventory Test
-	if (TestWeaponItemData00 && InventoryComponent)
+	if (DefaultWeaponItemData && InventoryComponent)
 	{
-		bool bResult = InventoryComponent->AddItem(TestWeaponItemData00, 1);
-		InventoryComponent->AddItem(TestWeaponItemData01, 1);
+		bool bResult = InventoryComponent->AddItem(DefaultWeaponItemData, 1);
+		//InventoryComponent->AddItem(TestWeaponItemData01, 1);
 
 		if (bResult)
 		{
-			EquipSwordWeapon(TestWeaponItemData00);
+			EquipSwordWeapon(DefaultWeaponItemData);
 			UE_LOG(LogTemp, Warning, TEXT("Item added to inventory successfully."));
 		}
 		else
@@ -195,6 +205,9 @@ void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	// Pause(Open Menu)
 	EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::OnPausePressed);
+
+	// Interact
+	EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ADSCharacterPlayer::OnInteractPressed);
 }
 
 void ADSCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
@@ -399,6 +412,16 @@ void ADSCharacterPlayer::OnPausePressed(const FInputActionValue& Value)
 	if (PlayerController)
 	{
 		PlayerController->OnPausePressed();
+	}
+}
+
+void ADSCharacterPlayer::OnInteractPressed(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Log, TEXT("Interact Pressed"));
+	if (InteractionComponent)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Trying to interact..."));
+		InteractionComponent->TryInteract();
 	}
 }
 
