@@ -552,6 +552,9 @@ void ADSCharacterPlayer::EquipSwordWeapon(const UDSWeaponItemData* NewWeaponData
 	FRotator SpawnRotation = GetMesh()->GetSocketRotation(SocketName);
 
 	// Spawn 정보 구체화
+	// SpawnActor()의 호출 시 생성 동작을 세밀하게 제어하기 위한 구조체
+	// Owner과 Istigator(행동의 주체) 설정이 필요할 때 사용
+	// 데미지 전달, 팀 판정, AI 인식 등에 중요
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = GetInstigator();
