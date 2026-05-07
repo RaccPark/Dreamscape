@@ -45,7 +45,14 @@ protected:
 	UImage* CreateHPCell();
 	void RemoveHPCell();
 
+
+public:
+	void BindToPlayer(class ADSCharacterPlayer* Player);
+
+
+	UFUNCTION()
 	void UpdateHealth(int32 NewHealth);
+
 	void UpdateHPBarBackground();
 	void SetMaxHealth(int32 NewMaxHealth);
 };

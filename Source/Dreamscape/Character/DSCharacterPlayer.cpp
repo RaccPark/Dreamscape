@@ -596,6 +596,9 @@ ADSSwordWeaponBase* ADSCharacterPlayer::GetEquippedSwordWeapon() const
 void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
 {
 	CurrentHealth -= DamageAmount;
+	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
+	OnHealthChangedDelegate.Broadcast(CurrentHealth);
+
 	if (CurrentHealth <= 0.0f)
 	{
 		PlayerFSMComponent->HandleDeath();

@@ -11,6 +11,7 @@
  * 
  */
 DECLARE_MULTICAST_DELEGATE(FOnDeathDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, int32, NewHelath);
 
 UCLASS()
 class DREAMSCAPE_API ADSCharacterPlayer : public ADSCharacterBase, public IDSDamageableInterface
@@ -173,8 +174,9 @@ public:
 	virtual void OnDeath() override;
 	void OnRollEnd();
 	
-
+// ==================================================
 // Weapon Section
+// ==================================================
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ADSSwordWeaponBase> SwordWeaponToEquip;
@@ -192,7 +194,9 @@ public:
 	class ADSSwordWeaponBase* GetEquippedSwordWeapon() const;
 
 
+// ==================================================
 // Damageable Interface Section
+// ==================================================
 public:
 	virtual void ApplyDamage(float DamageAmount) override;
 	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
@@ -200,7 +204,10 @@ public:
 public:
 	FOnDeathDelegate OnDeathDelegate;
 
+
+// ==================================================
 // Inventory Test Section
+// ==================================================
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSWeaponItemData> DefaultWeaponItemData;
@@ -209,4 +216,9 @@ protected:
 	TObjectPtr<class UDSWeaponItemData> TestWeaponItemData01;
 
 
+// ==================================================
+// UI Section
+// ==================================================
+public:
+	FOnHealthChanged OnHealthChangedDelegate;
 };

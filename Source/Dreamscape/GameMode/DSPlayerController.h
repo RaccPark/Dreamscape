@@ -16,6 +16,7 @@ class DREAMSCAPE_API ADSPlayerController : public APlayerController
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* InPawn) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> PasueInputMappingContext;
@@ -25,6 +26,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ResumeAction;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UDSPlayerHUDWidget> PlayerHUDWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<class UDSPlayerHUDWidget> PlayerHUDWidget;
 
 protected:
 	void SetupInputComponent() override;

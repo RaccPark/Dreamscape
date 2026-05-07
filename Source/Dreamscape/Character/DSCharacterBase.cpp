@@ -79,6 +79,25 @@ void ADSCharacterBase::SetCharacterControlData(const UDSCharacterControlData* Ch
 	GetCharacterMovement()->RotationRate = CharacterControlData->RotationRate;
 }
 
+void ADSCharacterBase::SetCurrentHealth(float NewHealth)
+{
+	CurrentHealth = NewHealth;
+}
+
+void ADSCharacterBase::SetMaxHealth(float NewHealth)
+{
+	MaxHealth = NewHealth;
+}
+
+float ADSCharacterBase::GetCurrentHealth() const
+{
+	return CurrentHealth;
+}
+
+float ADSCharacterBase::GetMaxHealth() const
+{
+	return MaxHealth;
+}
 void ADSCharacterBase::OnDeath()
 {
 	// Disable character movement & collision

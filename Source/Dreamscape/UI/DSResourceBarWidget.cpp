@@ -16,6 +16,17 @@ void UDSResourceBarWidget::NativeConstruct()
 	InitHPBar();
 }
 
+void UDSResourceBarWidget::BindToPlayer(ADSCharacterPlayer* Player)
+{
+	if (!Player)
+	{
+		return;
+	}
+
+	Player->OnHealthChangedDelegate.AddDynamic(this, &UDSResourceBarWidget::UpdateHealth);
+	UE_LOG(LogTemp, Warning, TEXT("Bind!"));
+}
+
 void UDSResourceBarWidget::InitHPBar()
 {
 	if (!HPBox_HorizontalBox || !HPCell_Texture)
@@ -68,7 +79,16 @@ void UDSResourceBarWidget::AddHPCell()
 {
 	UImage* NewCell = CreateHPCell();
 
-	HPBox_HorizontalBox->AddChild(NewCell);
+	UHorizontalBoxSlot* BoxSlot = HPBox_HorizontalBox->AddChildToHorizontalBox(NewCell);
+
+	if (BoxSlot)
+	{
+		BoxSlot->SetPadding(FMargin(0.0f, 0.0f, 3.0f, 0.0f));
+		BoxSlot->SetHorizontalAlignment(HAlign_Left);
+		BoxSlot->SetVerticalAlignment(VAlign_Center);
+	}
+
+	//HPBox_HorizontalBox->AddChild(NewCell);
 	HPCells.Add(NewCell);
 }
 

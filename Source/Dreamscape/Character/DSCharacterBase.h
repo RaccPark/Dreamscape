@@ -37,6 +37,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Character Stats", Meta = (AllowPrivateAccess = "true"))
 	float CurrentHealth;
 
+public:
+	void SetCurrentHealth(float NewHealth);
+	void SetMaxHealth(float NewHealth);
+	float GetCurrentHealth() const;
+	float GetMaxHealth() const;
+
 protected:
 	virtual void OnDeath();
 
