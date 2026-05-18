@@ -16,6 +16,7 @@ enum class EDSEnemyState : uint8
 	ES_Chase	UMETA(DisplayName = "Chase"),
 	ES_Attack	UMETA(DisplayName = "Attack"),
 	ES_Dead 	UMETA(DisplayName = "Dead"),
+	ES_Spawn	UMETA(DisplayName = "Spawn"),
 }; 
 
 

@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Interface/DSWidgetTransitionable.h"
 #include "DSPlayerHUDWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DREAMSCAPE_API UDSPlayerHUDWidget : public UUserWidget
+class DREAMSCAPE_API UDSPlayerHUDWidget : public UUserWidget, public IDSWidgetTransitionable
 {
 	GENERATED_BODY()
 	
@@ -20,4 +21,7 @@ public:
 public:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UDSResourceBarWidget> WBPResourceBar;
+
+	virtual void PlayAppearTransition() override;
+	virtual void PlayDisappearTransition() override;
 };

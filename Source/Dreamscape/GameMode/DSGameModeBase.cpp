@@ -2,6 +2,7 @@
 
 
 #include "GameMode/DSGameModeBase.h"
+#include "GameMode/DSGameState.h"
 
 ADSGameModeBase::ADSGameModeBase()
 {
@@ -11,9 +12,16 @@ ADSGameModeBase::ADSGameModeBase()
 		DefaultPawnClass = DefaultPawnClassRef.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerClassRef(TEXT("/Script/Engine.Blueprint'/Game/Character/BP_PlayerController.BP_PlayerController_C'"));
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerClassRef(TEXT("/Game/Character/BP_PlayerController.BP_PlayerController_C"));
 	if (PlayerControllerClassRef.Class)
 	{
 		PlayerControllerClass = PlayerControllerClassRef.Class;
 	}
+
+	static ConstructorHelpers::FClassFinder<ADSGameState> GameStateClassRef(TEXT("/Game/Levels/BP_GameState.BP_GameState_C"));
+	if (GameStateClassRef.Class)
+	{
+		GameStateClass = GameStateClassRef.Class;
+	}
+
 }

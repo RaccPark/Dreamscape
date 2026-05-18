@@ -19,7 +19,7 @@ public class Dreamscape : ModuleRules
 			"UMG",
 			"Niagara",
 			"GameplayTags",
-		});
+        });
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
 

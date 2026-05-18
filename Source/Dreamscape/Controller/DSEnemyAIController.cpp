@@ -19,10 +19,12 @@ void ADSEnemyAIController::OnPossess(APawn* InPawn)
 	if (BehaviorTreeAsset)
 	{
 		RunBehaviorTree(BehaviorTreeAsset);
+
+		// BlackboardComponent 초기화
+		BBComponent = GetBlackboardComponent();
 	}
 	
-	// BlackboardComponent 초기화
-	BBComponent = GetBlackboardComponent();
+	
 
 	//UE_LOG(LogTemp, Warning, TEXT("BB Value: %s"), GetBlackboardComponent()->GetValueAsObject("TargetActor") ? TEXT("SET") : TEXT("NULL"));
 }

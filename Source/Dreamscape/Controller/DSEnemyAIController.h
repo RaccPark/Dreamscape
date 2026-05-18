@@ -35,7 +35,6 @@ public:
 protected:
 	void UpdateBlackboardValues(class ADSEnemyCharacterBase* EnemyCharacter, APawn* PlayerPawn);
 
-private:
 	UPROPERTY()
 	TObjectPtr<class UBlackboardComponent> BBComponent;
 };

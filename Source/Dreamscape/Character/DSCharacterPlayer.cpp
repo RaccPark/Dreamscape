@@ -616,6 +616,32 @@ void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, const FVec
 	LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 }
 
+void ADSCharacterPlayer::StartAttackTrace()
+{
+	if (GetEquippedSwordWeapon())
+	{
+		EquippedSwordWeapon->StartAttackTrace();
+		// 임시 캐릭터 런치
+		LaunchCharacter(GetActorForwardVector() * 600.f, true, true);
+	}
+}
+
+void ADSCharacterPlayer::PerformAttackTrace()
+{
+	if (GetEquippedSwordWeapon())
+	{
+		EquippedSwordWeapon->PerformTrace();
+	}
+}
+
+void ADSCharacterPlayer::EndAttackTrace()
+{
+	if (GetEquippedSwordWeapon())
+	{
+		EquippedSwordWeapon->EndAttackTrace();
+	}
+}
+
 void ADSCharacterPlayer::ComboActionBegin()
 {
 	CurrentCombo = 1;

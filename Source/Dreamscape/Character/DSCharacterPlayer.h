@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/DSCharacterBase.h"
 #include "Interface/DSDamageableInterface.h"
+#include "Interface/DSAttackTraceInterface.h"
 #include "DSCharacterPlayer.generated.h"
 
 /**
@@ -14,7 +15,7 @@ DECLARE_MULTICAST_DELEGATE(FOnDeathDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, int32, NewHelath);
 
 UCLASS()
-class DREAMSCAPE_API ADSCharacterPlayer : public ADSCharacterBase, public IDSDamageableInterface
+class DREAMSCAPE_API ADSCharacterPlayer : public ADSCharacterBase, public IDSDamageableInterface, public IDSAttackTraceInterface
 {
 	GENERATED_BODY()
 	
@@ -204,6 +205,14 @@ public:
 public:
 	FOnDeathDelegate OnDeathDelegate;
 
+
+// ==================================================
+// Attack Trace Interface Section
+// ==================================================
+public:
+	virtual void StartAttackTrace() override;
+	virtual void PerformAttackTrace() override;
+	virtual void EndAttackTrace() override;
 
 // ==================================================
 // Inventory Test Section

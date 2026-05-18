@@ -19,13 +19,6 @@ ADSEnemyCharacterBase::ADSEnemyCharacterBase()
 	AttackStartRange = 50.0f;
 }
 
-void ADSEnemyCharacterBase::TakeDamage(float DamageAmount)
-{
-
-
-	
-}
-
 // Called when the game starts or when spawned
 void ADSEnemyCharacterBase::BeginPlay()
 {
@@ -34,6 +27,8 @@ void ADSEnemyCharacterBase::BeginPlay()
 	EnemyAnimInstance = Cast<UDSEnemyAnimInstance>(GetMesh()->GetAnimInstance());
 
 	CurrentHealth = MaxHealth;
+
+	
 }
 
 void ADSEnemyCharacterBase::Attack()
@@ -60,6 +55,23 @@ void ADSEnemyCharacterBase::DoRagdoll()
 {
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
+}
+
+void ADSEnemyCharacterBase::OnStateChanged(EDSEnemyState NewState)
+{
+	switch (NewState)
+	{
+	case EDSEnemyState::ES_Idle:
+		break;
+	case EDSEnemyState::ES_Chase:
+		break;
+	case EDSEnemyState::ES_Attack:
+		break;
+	case EDSEnemyState::ES_Dead:
+		break;
+	default:
+		break;
+	}
 }
 
 void ADSEnemyCharacterBase::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -93,5 +105,20 @@ float ADSEnemyCharacterBase::GetChaseStartRange() const
 float ADSEnemyCharacterBase::GetAttackStartRange() const
 {
 	return AttackStartRange;
+}
+
+EDSEnemyState ADSEnemyCharacterBase::GetState() const
+{
+	return CurrentState;
+}
+
+void ADSEnemyCharacterBase::SetState(EDSEnemyState NewState)
+{
+	if (CurrentState == NewState)
+	{
+		return;
+	}
+
+	CurrentState = NewState;
 }
 

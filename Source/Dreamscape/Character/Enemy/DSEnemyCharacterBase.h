@@ -18,8 +18,6 @@ public:
 	// Sets default values for this character's properties
 	ADSEnemyCharacterBase();
 
-	void TakeDamage(float DamageAmount);
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -54,10 +52,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TObjectPtr<class UAnimMontage> DeathMontage;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	EDSEnemyState CurrentState;
+
 	virtual void OnDeath();
 	virtual void DoRagdoll();
 
 	FTimerHandle HitTimerHandle;
+
+	void OnStateChanged(EDSEnemyState NewState);
 
 public:	
 	// Called every frame
@@ -75,4 +78,7 @@ public:
 
 	float GetChaseStartRange() const;
 	float GetAttackStartRange() const;
+
+	EDSEnemyState GetState() const;
+	void SetState(EDSEnemyState NewState);
 };

@@ -4,10 +4,31 @@
 #include "Animation/AnimNotify/DSAnimNotifyState_Attack.h"
 #include "Character/DSCharacterPlayer.h"
 #include "Weapon/DSSwordWeaponBase.h"
+#include "Interface/DSAttackTraceInterface.h"
 
 void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
+	if (!MeshComp)
+	{
+		return;
+	}
 
+	AActor* Owner = MeshComp->GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	IDSAttackTraceInterface* AttackTraceInterface = Cast<IDSAttackTraceInterface>(Owner);
+	if (!AttackTraceInterface)
+	{
+		return;
+	}
+
+	// 공격 트레이스 시작
+	AttackTraceInterface->StartAttackTrace();
+
+	/*
 	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
 	if (Player)
 	{
@@ -18,30 +39,53 @@ void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UA
 			Player->LaunchCharacter(Player->GetActorForwardVector() * 600.f, true, true);
 		}
 	}
+	*/
 }
 
 void UDSAnimNotifyState_Attack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime)
 {
-	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
-	if (Player)
+	if (!MeshComp)
 	{
-		if (ADSSwordWeaponBase* Weapon = Player->GetEquippedSwordWeapon())
-		{
-			Weapon->PerformTrace();
-		}
+		return;
 	}
+
+	AActor* Owner = MeshComp->GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	IDSAttackTraceInterface* AttackTraceInterface = Cast<IDSAttackTraceInterface>(Owner);
+	if (!AttackTraceInterface)
+	{
+		return;
+	}
+
+	// 공격 트레이스 틱
+	AttackTraceInterface->PerformAttackTrace();
 }
 
 
 
 void UDSAnimNotifyState_Attack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
-	if (Player)
+	if (!MeshComp)
 	{
-		if (ADSSwordWeaponBase* Weapon = Player->GetEquippedSwordWeapon())
-		{
-			Weapon->EndAttackTrace();
-		}
+		return;
 	}
+
+	AActor* Owner = MeshComp->GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	IDSAttackTraceInterface* AttackTraceInterface = Cast<IDSAttackTraceInterface>(Owner);
+	if (!AttackTraceInterface)
+	{
+		return;
+	}
+
+	// 공격 트레이스 틱
+	AttackTraceInterface->EndAttackTrace();
 }
