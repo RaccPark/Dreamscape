@@ -69,22 +69,43 @@ void ADSSwordWeaponBase::PerformTrace()
 	FVector Start = SwordWeaponMesh->GetSocketLocation("Start");
 	FVector End = SwordWeaponMesh->GetSocketLocation("End");
 
-	DrawDebugSphere(GetWorld(), Start, 5.f, 12, FColor::Green, false, 2.f);
-	DrawDebugSphere(GetWorld(), End, 5.f, 12, FColor::Blue, false, 2.f);
+	float TraceRadius = 12.f;
+	float HalfHeight = 30.f;
 
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.f, 0, 2.f);
+
+
+	//DrawDebugSphere(GetWorld(), Start, TraceRadius, 12, FColor::Green, false, 2.f);
+	//DrawDebugSphere(GetWorld(), End, TraceRadius, 12, FColor::Blue, false, 2.f);
+
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.f, 0, 2.f);
 
 	TArray<FHitResult> Hits;
 
-	UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, 1.f, UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, HitActors, EDrawDebugTrace::None, Hits, true);
+	UKismetSystemLibrary::CapsuleTraceMulti(
+		GetWorld(),
+		Start,
+		End,
+		TraceRadius,
+		HalfHeight,
+		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1),
+		false,
+		HitActors,
+		EDrawDebugTrace::None,
+		Hits,
+		true
+	);
+
+	//UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, TraceRadius, UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, HitActors, EDrawDebugTrace::None, Hits, true);
+
+	AActor* OwnerActor = GetOwner();
 
 	for (auto& Hit : Hits)
 	{
 		AActor* HitActor = Hit.GetActor();
 
-		if (HitActor && HitActor->IsA(ADSCharacterPlayer::StaticClass()))
+		if (HitActor && HitActor == OwnerActor)
 		{
-			continue; // Skip player character
+			continue; // Skip the owner of the weapon
 		}
 
 		if (HitActor && !HitActors.Contains(HitActor))

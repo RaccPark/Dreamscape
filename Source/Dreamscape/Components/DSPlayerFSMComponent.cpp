@@ -48,7 +48,7 @@ void UDSPlayerFSMComponent::ChangeState(EPlayerStateType NewType)
 
 	UpdateCurrentStatePointer();
 
-	if (CurrentState)
+	if (IsValid(CurrentState))
 	{
 		CurrentState->Enter();
 	}
@@ -225,6 +225,13 @@ void UDSPlayerFSMComponent::UpdateCurrentStatePointer()
 	if (StateStack.Num() > 0)
 	{
 		CurrentState = GetState(StateStack.Last());
+
+		if (!IsValid(CurrentState))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CurrentState is null after UpdateCurrentStatePointer! State type: %d"), static_cast<uint8>(StateStack.Last()));
+			return;
+		}
+
 		OnStateChangedDelegate.Broadcast(GetCurrentStateType());
 	}
 	else

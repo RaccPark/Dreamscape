@@ -7,7 +7,9 @@
 #include "Types/DSEnemyState.h"
 #include "DSEnemyCharacterBase.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FOnAttackEndedDelegate)
+DECLARE_MULTICAST_DELEGATE(FOnAttackEndedDelegate);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 
 UCLASS(Abstract)
 class DREAMSCAPE_API ADSEnemyCharacterBase : public ACharacter
@@ -81,4 +83,8 @@ public:
 
 	EDSEnemyState GetState() const;
 	void SetState(EDSEnemyState NewState);
+
+	FOnDeath OnDeathDelegate;
+
+	virtual void PlayLandingSequnce();
 };

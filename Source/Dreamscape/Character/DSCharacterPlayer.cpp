@@ -140,6 +140,8 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 
 	CurrentCombo = 0;
 	HasNextComboCommand = false;
+
+	bIsInvincible = false;
 }
 
 void ADSCharacterPlayer::BeginPlay()
@@ -411,7 +413,7 @@ void ADSCharacterPlayer::OnPausePressed(const FInputActionValue& Value)
 	ADSPlayerController* PlayerController = Cast<ADSPlayerController>(GetController());
 	if (PlayerController)
 	{
-		PlayerController->OnPausePressed();
+		PlayerController->ChangeInputMode(EPlayerInputMode::UI);
 	}
 }
 
@@ -595,6 +597,11 @@ ADSSwordWeaponBase* ADSCharacterPlayer::GetEquippedSwordWeapon() const
 
 void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
 {
+	if (!CanReceiveDamage())
+	{
+		return;
+	}
+
 	CurrentHealth -= DamageAmount;
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
 	OnHealthChangedDelegate.Broadcast(CurrentHealth);
@@ -614,6 +621,24 @@ void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, const FVec
 {
 	ApplyDamage(DamageAmount);
 	LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
+}
+
+bool ADSCharacterPlayer::CanReceiveDamage()
+{
+	if (!PlayerFSMComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] PlayerFSMComponent is nullptr!"));
+		return false;
+	}
+
+	EPlayerStateType CurrentState = PlayerFSMComponent->GetCurrentStateType();
+
+	if (CurrentState == EPlayerStateType::EPS_Roll || CurrentState == EPlayerStateType::EPS_Hit || CurrentState == EPlayerStateType::EPS_Death)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void ADSCharacterPlayer::StartAttackTrace()

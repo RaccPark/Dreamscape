@@ -70,7 +70,7 @@ void UDSUIManagerSubsystem::PauseGame()
 
 void UDSUIManagerSubsystem::ResumeGame()
 {
-	APlayerController* PlayerController = GetLocalPlayer()->GetPlayerController(GetWorld());
+	ADSPlayerController* PlayerController = Cast<ADSPlayerController>(GetLocalPlayer()->GetPlayerController(GetWorld()));
 	if (!PlayerController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PlayerController not found in TogglePauseMenu"));
@@ -83,6 +83,7 @@ void UDSUIManagerSubsystem::ResumeGame()
 	}
 
 	// IMC_Default 추가
+	/*
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 	{
 		if (IMC_Pause)
@@ -95,11 +96,12 @@ void UDSUIManagerSubsystem::ResumeGame()
 			Subsystem->AddMappingContext(IMC_Default, 0);
 		}
 	}
+	*/
+	PlayerController->ChangeInputMode(EPlayerInputMode::Gameplay);
 
 	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
-	PlayerController->SetInputMode(FInputModeGameOnly());
-	PlayerController->bShowMouseCursor = false;
+	PlayerController->bShowMouseCursor = true;
 
 	bIsPaused = false;
 }

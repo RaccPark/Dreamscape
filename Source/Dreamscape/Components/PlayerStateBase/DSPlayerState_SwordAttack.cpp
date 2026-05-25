@@ -30,6 +30,7 @@ void UDSPlayerState_SwordAttack::Update(float DeltaTime)
 
 void UDSPlayerState_SwordAttack::Exit()
 {
+
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_SwordAttack] Exiting SwordAttack state."));
 }
 

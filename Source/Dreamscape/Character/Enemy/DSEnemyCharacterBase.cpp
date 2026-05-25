@@ -122,3 +122,8 @@ void ADSEnemyCharacterBase::SetState(EDSEnemyState NewState)
 	CurrentState = NewState;
 }
 
+void ADSEnemyCharacterBase::PlayLandingSequnce()
+{
+	
+}
+

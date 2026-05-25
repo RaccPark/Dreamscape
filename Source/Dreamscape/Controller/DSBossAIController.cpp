@@ -14,18 +14,21 @@ void ADSBossAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	if (BehaviorTree)
+	if (!BehaviorTree)
 	{
-		RunBehaviorTree(BehaviorTree);
-
-		BBComponent = GetBlackboardComponent();
-
-		APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
-		if (BBComponent)
-		{
-			TrySetPlayerAsTarget();
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[DSBossAIController] BehaviorTree not assigned in %s"), *GetName());
 	}
+
+	// 이제 Boss Character 자체에서 StartAI로 실행
+	/*RunBehaviorTree(BehaviorTree);
+
+	BBComponent = GetBlackboardComponent();
+
+	APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (BBComponent)
+	{
+		TrySetPlayerAsTarget();
+	}*/
 }
 
 void ADSBossAIController::Tick(float DeltaTime)
@@ -45,4 +48,22 @@ void ADSBossAIController::TrySetPlayerAsTarget()
 	{
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ADSBossAIController::TrySetPlayerAsTarget);
 	}
+}
+
+void ADSBossAIController::SetBehaviorTreeByOwnController()
+{
+	RunBehaviorTree(BehaviorTree);
+
+	BBComponent = GetBlackboardComponent();
+
+	APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (BBComponent)
+	{
+		TrySetPlayerAsTarget();
+	}
+}
+
+UBehaviorTree* ADSBossAIController::GetBehaviorTree() const
+{
+	return BehaviorTree;
 }

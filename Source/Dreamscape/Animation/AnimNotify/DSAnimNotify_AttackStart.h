@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,4 +14,6 @@ class DREAMSCAPE_API UDSAnimNotify_AttackStart : public UAnimNotify
 {
 	GENERATED_BODY()
 	
+public:
+	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 };

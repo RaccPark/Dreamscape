@@ -27,19 +27,6 @@ void UDSAnimNotifyState_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UA
 
 	// 공격 트레이스 시작
 	AttackTraceInterface->StartAttackTrace();
-
-	/*
-	ADSCharacterPlayer* Player = Cast<ADSCharacterPlayer>(MeshComp->GetOwner());
-	if (Player)
-	{
-		if (ADSSwordWeaponBase* Weapon = Player->GetEquippedSwordWeapon())
-		{
-			Weapon->StartAttackTrace();
-			// 임시 캐릭터 런치
-			Player->LaunchCharacter(Player->GetActorForwardVector() * 600.f, true, true);
-		}
-	}
-	*/
 }
 
 void UDSAnimNotifyState_Attack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime)

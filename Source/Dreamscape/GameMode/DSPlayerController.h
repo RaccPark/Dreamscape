@@ -9,6 +9,14 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class EPlayerInputMode : uint8
+{
+	Gameplay    UMETA(DisplayName = "Gameplay"),	// 일반 조작
+	Cinematic   UMETA(DisplayName = "Cinematic"),   // 카메라 연출 - 입력 차단
+	UI          UMETA(DisplayName = "UI"),          // UI만 입력
+};
+
 UCLASS()
 class DREAMSCAPE_API ADSPlayerController : public APlayerController
 {
@@ -25,6 +33,9 @@ protected:
 	TObjectPtr<class UInputMappingContext> DefaultInputMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext> CinematicInputMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ResumeAction;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -32,6 +43,12 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class UDSPlayerHUDWidget> PlayerHUDWidget;
+
+	EPlayerInputMode CurrentInputMode;
+
+	void ApplyGameplayMode();
+	void ApplyCinematicMode();
+	void ApplyUIMode();
 
 protected:
 	void SetupInputComponent() override;
@@ -41,5 +58,10 @@ public:
 
 	class UInputMappingContext* GetPauseInputMappingContext() const;
 	class UInputMappingContext* GetDefaultInputMappingContext() const;
+
+	UFUNCTION()
+	void ChangeInputMode(EPlayerInputMode NewInputMode);
+
+	EPlayerInputMode GetCurrentInputMode() const;
 
 };

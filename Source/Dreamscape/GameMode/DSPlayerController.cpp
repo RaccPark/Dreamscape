@@ -73,6 +73,68 @@ void ADSPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 }
 
+void ADSPlayerController::ApplyGameplayMode()
+{
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+	SetShowMouseCursor(false);
+
+	ADSCharacterBase* CharacterPlayer = Cast<ADSCharacterBase>(GetPawn());
+	if (!CharacterPlayer)
+	{
+		return;
+	}
+
+	auto* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+	if (!Subsystem)
+	{
+		return;
+	}
+
+	Subsystem->RemoveMappingContext(CinematicInputMappingContext);
+	Subsystem->RemoveMappingContext(PasueInputMappingContext);
+
+	if (DefaultInputMappingContext)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Adding DefaultInputMappingContext to Subsystem"));
+		Subsystem->AddMappingContext(DefaultInputMappingContext, 0);
+	}
+
+	CurrentInputMode = EPlayerInputMode::Gameplay;
+}
+
+void ADSPlayerController::ApplyCinematicMode()
+{
+	ADSCharacterPlayer* CharacterPlayer = Cast<ADSCharacterPlayer>(GetPawn());
+	if (!CharacterPlayer)
+	{
+		return;
+	}
+
+	auto* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+	if (!Subsystem)
+	{
+		return;
+	}
+
+	Subsystem->RemoveMappingContext(CharacterPlayer->GetDefaultMappingContext());
+	Subsystem->RemoveMappingContext(PasueInputMappingContext);
+
+	SetShowMouseCursor(false);
+
+	FInputModeGameOnly InputMode;
+	Super::SetInputMode(InputMode);
+
+	CurrentInputMode = EPlayerInputMode::Cinematic;
+}
+
+void ADSPlayerController::ApplyUIMode()
+{
+	OnPausePressed();
+
+	CurrentInputMode = EPlayerInputMode::UI;
+}
+
 void ADSPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -109,4 +171,30 @@ UInputMappingContext* ADSPlayerController::GetPauseInputMappingContext() const
 UInputMappingContext* ADSPlayerController::GetDefaultInputMappingContext() const
 {
 	return DefaultInputMappingContext;
+}
+
+void ADSPlayerController::ChangeInputMode(EPlayerInputMode NewInputMode)
+{
+	if (CurrentInputMode == NewInputMode)
+	{
+		return;
+	}
+
+	switch (NewInputMode)
+	{
+	case EPlayerInputMode::Gameplay:
+		ApplyGameplayMode();
+		break;
+	case EPlayerInputMode::UI:
+		ApplyUIMode();
+		break;
+	case EPlayerInputMode::Cinematic:
+		ApplyCinematicMode();
+		break;
+	}
+}
+
+EPlayerInputMode ADSPlayerController::GetCurrentInputMode() const
+{
+	return CurrentInputMode;
 }

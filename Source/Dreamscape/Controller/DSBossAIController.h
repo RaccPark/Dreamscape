@@ -29,4 +29,10 @@ protected:
 	TObjectPtr<class UBlackboardComponent> BBComponent;
 
 	void TrySetPlayerAsTarget();
+
+public:
+	void SetBehaviorTreeByOwnController();
+
+	UBehaviorTree* GetBehaviorTree() const;
+
 };

@@ -63,9 +63,10 @@ public:
 
 private:
 	UPROPERTY()
-	UDSPlayerStateBase* CurrentState;
+	TObjectPtr<UDSPlayerStateBase> CurrentState;
 
-	TMap<EPlayerStateType, UDSPlayerStateBase*> PlayerStates;
+	UPROPERTY()
+	TMap<EPlayerStateType, TObjectPtr<UDSPlayerStateBase>> PlayerStates;
 
 	UPROPERTY()
 	TObjectPtr<class ADSCharacterPlayer> OwnerCharacter;

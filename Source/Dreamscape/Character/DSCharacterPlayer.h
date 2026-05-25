@@ -93,6 +93,8 @@ protected:
 	float DefaultMaxWalkSpeed;
 	float MaxWalkSpeed;
 
+	bool bIsInvincible;
+
 	ECharacterControlType CurrentCharacterControlType;
 
 protected:
@@ -194,25 +196,28 @@ public:
 
 	class ADSSwordWeaponBase* GetEquippedSwordWeapon() const;
 
-
 // ==================================================
-// Damageable Interface Section
-// ==================================================
-public:
-	virtual void ApplyDamage(float DamageAmount) override;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
-
-public:
-	FOnDeathDelegate OnDeathDelegate;
-
-
-// ==================================================
-// Attack Trace Interface Section
+// Attack Trace Interface Section(For Weapon)
 // ==================================================
 public:
 	virtual void StartAttackTrace() override;
 	virtual void PerformAttackTrace() override;
 	virtual void EndAttackTrace() override;
+
+
+// ==================================================
+// Damageable Interface Section
+// ==================================================
+public:
+	// Interface
+	virtual void ApplyDamage(float DamageAmount) override;
+	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
+
+protected:
+	bool CanReceiveDamage();
+
+public:
+	FOnDeathDelegate OnDeathDelegate;
 
 // ==================================================
 // Inventory Test Section

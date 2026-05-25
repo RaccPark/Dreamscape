@@ -3,6 +3,7 @@
 
 #include "InteractionObject/DSCameraDirector.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameMode/DSPlayerController.h"
 #include "Camera/CameraActor.h"
 
 // Sets default values
@@ -29,9 +30,13 @@ void ADSCameraDirector::ReturnToPlayer()
 		return;
 	}
 
-	PlayerController->SetViewTargetWithBlend(PlayerPawn, BlendTime);
-	PlayerController->SetIgnoreMoveInput(false);
-	PlayerController->SetIgnoreLookInput(false);
+	ADSPlayerController* DSPlayerController = Cast<ADSPlayerController>(PlayerController);
+	if (!PlayerController)
+	{
+		return;
+	}
+	DSPlayerController->ChangeInputMode(EPlayerInputMode::Gameplay);
+	DSPlayerController->SetViewTargetWithBlend(PlayerPawn, BlendTime);
 }
 
 // Called every frame
@@ -49,9 +54,13 @@ void ADSCameraDirector::Activate()
 		return;
 	}
 
-	PlayerController->SetViewTargetWithBlend(TargetCamera, BlendTime);
-	PlayerController->SetIgnoreMoveInput(true);
-	PlayerController->SetIgnoreLookInput(true);
+	ADSPlayerController* DSPlayerController = Cast<ADSPlayerController>(PlayerController);
+	if (!DSPlayerController)
+	{
+		return;
+	}
+	DSPlayerController->ChangeInputMode(EPlayerInputMode::Cinematic);
+	DSPlayerController->SetViewTargetWithBlend(TargetCamera, BlendTime);
 
 	PlayerPawn = PlayerController->GetPawn();
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle,

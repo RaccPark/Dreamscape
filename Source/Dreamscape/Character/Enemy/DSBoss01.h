@@ -3,13 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/Enemy/DSEnemyCharacterBase.h"
+#include "Character/Enemy/DSBossCharacterBase.h"
 #include "Interface/DSAttackTraceInterface.h"
+#include "Interface/DSWeaponAttachInterface.h"
 #include "DSBoss01.generated.h"
 
 /**
  * 
  */
+namespace Boss01Socket
+{
+	const FName IdleSocket = TEXT("RightShoulderSocket");
+	const FName LeftHand = TEXT("LeftHandSocket");
+}
+
 // 구조체를 사용해보자
 USTRUCT(BlueprintType)
 struct FBossAction
@@ -31,17 +38,11 @@ struct FBossAction
 };
 
 UCLASS()
-class DREAMSCAPE_API ADSBoss01 : public ADSEnemyCharacterBase, public IDSAttackTraceInterface
+class DREAMSCAPE_API ADSBoss01 : public ADSBossCharacterBase, public IDSAttackTraceInterface, public IDSWeaponAttachInterface
 {
 	GENERATED_BODY()
 public:
 	ADSBoss01();
-
-	virtual void Attack() override;
-
-	virtual void StartAttackTrace() override;
-	virtual void PerformAttackTrace() override;
-	virtual void EndAttackTrace() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -49,8 +50,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Boss|Action")
 	TArray<FBossAction> Actions;
 
+	UPROPERTY(EditAnywhere, Category = "Boss|Weapon")
+	TObjectPtr<class UDSWeaponItemData> WeaponData;
+
 	UPROPERTY(VisibleAnywhere, Category = "Animation")
 	TObjectPtr<class UDSEnemyAnimInstance> AnimInstance;
+
+	UPROPERTY()
+	TObjectPtr<class ADSSwordWeapon> EquippedWeapon;
 
 	const FBossAction* SelectAction();
 
@@ -58,4 +65,21 @@ protected:
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	virtual void OnDeath() override;
+
+public:
+
+	virtual void Tick(float DeltaTime) override;
+
+	virtual void Attack() override;
+
+	virtual void StartAttackTrace() override;
+	virtual void PerformAttackTrace() override;
+	virtual void EndAttackTrace() override;
+
+	virtual void AttachWeaponBySocket(FName SocketName) override;
+
+	UFUNCTION()
+	void StartBossCombat();
 };
