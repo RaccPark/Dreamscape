@@ -135,6 +135,8 @@ public:
 
 	class UDSInventoryComponent* GetInventoryComponent() const;
 
+	class UDSInteractionComponent* GetInteractionComponent() const;
+
 // Animation Montage Section
 protected:
 	
@@ -235,4 +237,11 @@ protected:
 // ==================================================
 public:
 	FOnHealthChanged OnHealthChangedDelegate;
+
+// ==================================================
+// Tutorial Section
+// ==================================================
+public:
+	// 카메라 피킹(Shift) 사용 시 브로드캐스트
+	FSimpleMulticastDelegate OnCameraPeekStartedDelegate;
 };

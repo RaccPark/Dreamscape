@@ -31,6 +31,8 @@
 
 #include "Components/DSInteractionComponent.h"
 
+#include "Subsystem/DSTutorialSubsystem.h"
+
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
 	// Input
@@ -178,6 +180,13 @@ void ADSCharacterPlayer::BeginPlay()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Failed to add item to inventory."));
 		}
+	}
+
+	// 튜토리얼 시작
+	APlayerController* PC = CastChecked<APlayerController>(GetController());
+	if (UDSTutorialSubsystem* TutorialSubsystem = ULocalPlayer::GetSubsystem<UDSTutorialSubsystem>(PC->GetLocalPlayer()))
+	{
+		TutorialSubsystem->BindAndStart(this);
 	}
 
 }
@@ -368,6 +377,8 @@ void ADSCharacterPlayer::OnPeekStarted(const FInputActionValue& Value)
 	{
 		CameraPeekComponent->SetPeekActive(true);
 	}
+
+	OnCameraPeekStartedDelegate.Broadcast();
 }
 
 void ADSCharacterPlayer::OnPeekEnded(const FInputActionValue& Value)
@@ -406,6 +417,11 @@ UInputMappingContext* ADSCharacterPlayer::GetDefaultMappingContext() const
 UDSInventoryComponent* ADSCharacterPlayer::GetInventoryComponent() const
 {
 	return InventoryComponent;
+}
+
+UDSInteractionComponent* ADSCharacterPlayer::GetInteractionComponent() const
+{
+	return InteractionComponent;
 }
 
 void ADSCharacterPlayer::OnPausePressed(const FInputActionValue& Value)

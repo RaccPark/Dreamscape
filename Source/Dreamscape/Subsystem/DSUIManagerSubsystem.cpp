@@ -101,7 +101,7 @@ void UDSUIManagerSubsystem::ResumeGame()
 
 	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
-	PlayerController->bShowMouseCursor = true;
+	PlayerController->bShowMouseCursor = false;
 
 	bIsPaused = false;
 }
