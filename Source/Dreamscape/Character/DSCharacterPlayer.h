@@ -6,6 +6,7 @@
 #include "Character/DSCharacterBase.h"
 #include "Interface/DSDamageableInterface.h"
 #include "Interface/DSAttackTraceInterface.h"
+#include "Character/DSComboCommand.h"
 #include "DSCharacterPlayer.generated.h"
 
 /**
@@ -160,7 +161,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSCharacterComboActionData> ComboActionData;
 
-	void ComboActionBegin();
 	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
 
 	void SetComboCheckTimer();
@@ -169,8 +169,10 @@ protected:
 	int CurrentCombo;
 
 	FTimerHandle ComboTimerHandle;
-	bool HasNextComboCommand;
+	TUniquePtr<IDSComboCommand> PendingComboCommand;
 public:
+	void ComboActionBegin();
+
 	void Move(const struct FInputActionValue& Value);
 
 	void RotateCharacterToMouseCursor();
