@@ -59,6 +59,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = SpringArm)
 	uint32 bDoCollisionTest : 1;
 
-	UPROPERTY(EditAnywhere, Category = FollowCamera)
+	// 기획 기준 FOV 범위는 4~10. 다른 컨트롤 타입을 위해 하드 클램프는 넓게 두고 UI 슬라이더만 제한한다.
+	UPROPERTY(EditAnywhere, Category = FollowCamera, meta = (UIMin = "4.0", UIMax = "10.0", ClampMin = "1.0", ClampMax = "170.0"))
 	float FOV;
 };

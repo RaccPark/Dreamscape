@@ -46,11 +46,6 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	{
 		MoveAction = InputActionMoveRef.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionLookRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_Look.IA_Look'"));
-	if (InputActionLookRef.Object)
-	{
-		LookAction = InputActionLookRef.Object;
-	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionRollRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_Roll.IA_Roll'"));
 	if (InputActionRollRef.Object)
 	{
@@ -67,7 +62,7 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 		MousePosition = InputActionMousePositionRef.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionSwordAttackActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Character/Input/Actions/IA_SwordAttack.IA_SwordAttack'"));
-	if (InputActionMousePositionRef.Object)
+	if (InputActionSwordAttackActionRef.Object)
 	{
 		SwordAttackAction = InputActionSwordAttackActionRef.Object;
 	}
@@ -103,16 +98,23 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 15.0f));
 	//CameraBoom->SetRelativeRotation(FRotator(0.0f, -40.0f, 45.0f));	// Don't use
 	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->bEnableCameraRotationLag = true;
+	// 암 길이가 수천 유닛이라 회전 랙을 켜면 작은 각도 지연이 그대로 큰 위치 스윙이 된다.
+	// Yaw는 UpdateCameraYaw()에서 직접 보간하므로 회전 랙은 끈다.
+	CameraBoom->bEnableCameraRotationLag = false;
 	CameraBoom->CameraLagSpeed = 3.0f;
-	CameraBoom->CameraRotationLagSpeed = 20.0f;
 	CameraBoom->CameraLagMaxDistance = 300.f;
 	CameraBoom->ProbeSize = 8.0f;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
-	FollowCamera->FieldOfView = 90.0f;
+	// 실제 값은 DSC_Move(UDSCharacterControlData)에서 덮어쓴다. 기획 기준 FOV 4~10.
+	FollowCamera->FieldOfView = 8.0f;
+
+	// 카메라 회전 기믹용 Yaw 상태. 실제 시작값은 SetCharacterControlData()에서 데이터 에셋과 동기화된다.
+	CameraYawInterpSpeed = 4.0f;
+	CurrentCameraYaw = 0.0f;
+	TargetCameraYaw = 0.0f;
 
 	// Camera Peek Component
 	CameraPeekComponent = CreateDefaultSubobject<UDSCameraPeekComponent>(TEXT("CameraPeekComponent"));
@@ -192,6 +194,9 @@ void ADSCharacterPlayer::BeginPlay()
 
 void ADSCharacterPlayer::Tick(float DeltaTime)
 {
+	Super::Tick(DeltaTime);
+
+	UpdateCameraYaw(DeltaTime);
 }
 
 void ADSCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -257,6 +262,9 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 
 	FollowCamera->FieldOfView = CharacterControlData->FOV;
 
+	// 데이터 에셋이 지정한 Yaw를 카메라 회전 상태의 시작값으로 맞춘다.
+	CurrentCameraYaw = TargetCameraYaw = FRotator::NormalizeAxis(CharacterControlData->RelativeRotation.Yaw);
+
 	// Character Movement Settings
 	this->MaxWalkSpeed = CharacterControlData->MaxWalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed;
@@ -275,11 +283,12 @@ void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 	// 이동 설정
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	const FRotator Rotation = Controller->GetControlRotation();
-	const FRotator YawRotation(0, Rotation.Yaw, 0);
+	// 이동은 항상 "화면 기준 앞"(카메라 붐의 Yaw)을 기준으로 한다.
+	// 맵 45도 회전 연출이나 추후 카메라 회전 기믹이 들어와도 조작 방향이 화면과 어긋나지 않게 하기 위함.
+	const FRotationMatrix CameraYawMatrix(FRotator(0.0f, GetCameraYaw(), 0.0f));
 
-	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	const FVector ForwardDirection = CameraYawMatrix.GetUnitAxis(EAxis::X);
+	const FVector RightDirection = CameraYawMatrix.GetUnitAxis(EAxis::Y);
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
@@ -304,22 +313,115 @@ void ADSCharacterPlayer::Move(const FInputActionValue& Value)
 	}
 }
 
-void ADSCharacterPlayer::Look(const FInputActionValue& Value)
+// ==================================================
+// Camera Control Section
+// ==================================================
+
+UCameraComponent* ADSCharacterPlayer::GetCamera() const
 {
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+	return FollowCamera;
+}
 
-	// Set Custom Mouse Sensitivity Coefficient.
-	// Because Unreal Default Mouse Sensitivity is too high.
-	float MouseSensitivityCoefficient = 0.05f;
+USpringArmComponent* ADSCharacterPlayer::GetCameraBoom() const
+{
+	return CameraBoom;
+}
 
-	// Multiply MouseSensivity
-	float ManipulatedMouseSensitivity = 1.0f * MouseSensitivityCoefficient;
+float ADSCharacterPlayer::GetCameraYaw() const
+{
+	if (CameraBoom)
+	{
+		// GetTargetRotation()은 bUsePawnControlRotation / bInherit* 를 반영한, 랙이 걸리지 않은 목표 회전값이다.
+		// 카메라가 부드럽게 도는 도중에도 조작 기준이 밀리지 않는다.
+		return CameraBoom->GetTargetRotation().Yaw;
+	}
 
-	// Apply Mouse Sensitivity to LookAxisVector
-	LookAxisVector *= ManipulatedMouseSensitivity;
+	return Controller ? Controller->GetControlRotation().Yaw : GetActorRotation().Yaw;
+}
 
-	AddControllerYawInput(LookAxisVector.X);
-	AddControllerPitchInput(LookAxisVector.Y);
+void ADSCharacterPlayer::SetCameraYaw(float NewYaw, bool bInstant)
+{
+	TargetCameraYaw = FRotator::NormalizeAxis(NewYaw);
+
+	if (bInstant && CameraBoom)
+	{
+		CurrentCameraYaw = TargetCameraYaw;
+
+		FRotator BoomRotation = CameraBoom->GetRelativeRotation();
+		BoomRotation.Yaw = CurrentCameraYaw;
+		CameraBoom->SetRelativeRotation(BoomRotation);
+	}
+}
+
+void ADSCharacterPlayer::AddCameraYaw(float DeltaYaw, bool bInstant)
+{
+	SetCameraYaw(TargetCameraYaw + DeltaYaw, bInstant);
+}
+
+void ADSCharacterPlayer::UpdateCameraYaw(float DeltaTime)
+{
+	if (!CameraBoom || CurrentCameraYaw == TargetCameraYaw)
+	{
+		return;
+	}
+
+	// 360도 경계에서 먼 쪽으로 도는 것을 막기 위해 각도 차이를 직접 구해 최단 방향으로 보간한다.
+	const float DeltaAngle = FMath::FindDeltaAngleDegrees(CurrentCameraYaw, TargetCameraYaw);
+	const float Alpha = FMath::Clamp(CameraYawInterpSpeed * DeltaTime, 0.0f, 1.0f);
+
+	CurrentCameraYaw = (FMath::Abs(DeltaAngle) < 0.05f)
+		? TargetCameraYaw
+		: FRotator::NormalizeAxis(CurrentCameraYaw + DeltaAngle * Alpha);
+
+	// bInheritYaw가 false이므로 상대 Yaw가 곧 실효 월드 Yaw가 된다.
+	FRotator BoomRotation = CameraBoom->GetRelativeRotation();
+	BoomRotation.Yaw = CurrentCameraYaw;
+	CameraBoom->SetRelativeRotation(BoomRotation);
+}
+
+void ADSCharacterPlayer::DSCam(float NewFOV, float NewArmLength)
+{
+	if (!FollowCamera || !CameraBoom)
+	{
+		return;
+	}
+
+	if (NewFOV > 0.0f)
+	{
+		FollowCamera->SetFieldOfView(NewFOV);
+	}
+
+	if (NewArmLength > 0.0f)
+	{
+		CameraBoom->TargetArmLength = NewArmLength;
+	}
+
+	// UE의 FieldOfView는 수평 FOV이므로, 초점 평면에서 화면 가로로 보이는 월드 폭은 2 * Arm * tan(FOV/2).
+	const float CurrentFOV = FollowCamera->FieldOfView;
+	const float CurrentArmLength = CameraBoom->TargetArmLength;
+	const float ViewWidth = 2.0f * CurrentArmLength * FMath::Tan(FMath::DegreesToRadians(CurrentFOV * 0.5f));
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSCam] FOV=%.2f, ArmLength=%.1f, ViewWidth=%.1f (ArmLength = (Width/2) / tan(FOV/2))"),
+		CurrentFOV, CurrentArmLength, ViewWidth);
+}
+
+void ADSCharacterPlayer::DSCamYaw(float NewYaw)
+{
+	SetCameraYaw(NewYaw);
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSCam] CameraYaw %.2f -> %.2f (InterpSpeed=%.2f)"),
+		CurrentCameraYaw, TargetCameraYaw, CameraYawInterpSpeed);
+}
+
+void ADSCharacterPlayer::DSCamRotate(float DeltaYaw)
+{
+	// 콘솔에서 인자를 생략하면 0으로 들어올 수 있으므로 기본 90도로 처리한다.
+	const float AppliedDelta = FMath::IsNearlyZero(DeltaYaw) ? 90.0f : DeltaYaw;
+
+	AddCameraYaw(AppliedDelta);
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSCam] CameraYaw %.2f -> %.2f (Delta=%.2f, InterpSpeed=%.2f). 이동 입력은 항상 화면 기준 앞(+X)이어야 한다."),
+		CurrentCameraYaw, TargetCameraYaw, AppliedDelta, CameraYawInterpSpeed);
 }
 
 void ADSCharacterPlayer::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
