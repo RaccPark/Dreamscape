@@ -43,4 +43,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void TryInteract();
+
+	// 상호작용 실행 시 브로드캐스트 (튜토리얼 감지용)
+	FSimpleMulticastDelegate OnInteractedDelegate;
 };

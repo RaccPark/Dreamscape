@@ -31,6 +31,8 @@
 
 #include "Components/DSInteractionComponent.h"
 
+#include "Subsystem/DSTutorialSubsystem.h"
+
 ADSCharacterPlayer::ADSCharacterPlayer()
 {
 	// Input
@@ -139,7 +141,6 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	bUseControllerRotationYaw = false;
 
 	CurrentCombo = 0;
-	HasNextComboCommand = false;
 
 	bIsInvincible = false;
 }
@@ -178,6 +179,13 @@ void ADSCharacterPlayer::BeginPlay()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Failed to add item to inventory."));
 		}
+	}
+
+	// 튜토리얼 시작
+	APlayerController* PC = CastChecked<APlayerController>(GetController());
+	if (UDSTutorialSubsystem* TutorialSubsystem = ULocalPlayer::GetSubsystem<UDSTutorialSubsystem>(PC->GetLocalPlayer()))
+	{
+		TutorialSubsystem->BindAndStart(this);
 	}
 
 }
@@ -368,6 +376,8 @@ void ADSCharacterPlayer::OnPeekStarted(const FInputActionValue& Value)
 	{
 		CameraPeekComponent->SetPeekActive(true);
 	}
+
+	OnCameraPeekStartedDelegate.Broadcast();
 }
 
 void ADSCharacterPlayer::OnPeekEnded(const FInputActionValue& Value)
@@ -406,6 +416,11 @@ UInputMappingContext* ADSCharacterPlayer::GetDefaultMappingContext() const
 UDSInventoryComponent* ADSCharacterPlayer::GetInventoryComponent() const
 {
 	return InventoryComponent;
+}
+
+UDSInteractionComponent* ADSCharacterPlayer::GetInteractionComponent() const
+{
+	return InteractionComponent;
 }
 
 void ADSCharacterPlayer::OnPausePressed(const FInputActionValue& Value)
@@ -519,17 +534,22 @@ void ADSCharacterPlayer::ProcessComboCommand()
 {
 	if (CurrentCombo == 0)
 	{
-		ComboActionBegin();
+		// 즉시 실행 — Command 생성 후 바로 Execute (PDF 구현방법1 구조)
+		UE_LOG(LogTemp, Log, TEXT("[Command] ProcessComboCommand: 첫 공격 -> DSSwordAttackCommand 생성 후 즉시 Execute"));
+		TUniquePtr<IDSComboCommand> Cmd = MakeUnique<DSSwordAttackCommand>();
+		Cmd->Execute(this);
 		return;
 	}
 
-	if (!ComboTimerHandle.IsValid())
+	if (ComboTimerHandle.IsValid())
 	{
-		HasNextComboCommand = false;
+		// 버퍼에 적재 — 타이머 만료 시점에 실행 (PDF 구현방법2 구조)
+		UE_LOG(LogTemp, Log, TEXT("[Command] ProcessComboCommand: 콤보 %d 진행 중 -> PendingComboCommand 적재"), CurrentCombo);
+		PendingComboCommand = MakeUnique<DSSwordAttackCommand>();
 	}
 	else
 	{
-		HasNextComboCommand = true;
+		UE_LOG(LogTemp, Warning, TEXT("[Command] ProcessComboCommand: 타이머 만료 후 입력 -> 커맨드 버림 (유효 타이밍 아님)"));
 	}
 }
 
@@ -716,16 +736,21 @@ void ADSCharacterPlayer::SetComboCheckTimer()
 void ADSCharacterPlayer::ComboCheck()
 {
 	ComboTimerHandle.Invalidate();
-	if (HasNextComboCommand)
+	if (PendingComboCommand)
 	{
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
+		UE_LOG(LogTemp, Log, TEXT("[Command] ComboCheck: PendingComboCommand 소비 -> 콤보 %d 섹션으로 점프"), CurrentCombo);
 
 		FName NextSectionName = *FString::Printf(TEXT("%s%d"), *ComboActionData->MontageSectionNameProfix, CurrentCombo);
 		AnimInstance->Montage_JumpToSection(NextSectionName, SwordAttackMontage);
 
 		SetComboCheckTimer();
-		HasNextComboCommand = false;
+		PendingComboCommand.Reset();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Command] ComboCheck: PendingComboCommand 없음 -> 콤보 종료 대기"));
 	}
 }

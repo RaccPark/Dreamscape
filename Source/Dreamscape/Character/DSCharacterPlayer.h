@@ -6,6 +6,7 @@
 #include "Character/DSCharacterBase.h"
 #include "Interface/DSDamageableInterface.h"
 #include "Interface/DSAttackTraceInterface.h"
+#include "Character/DSComboCommand.h"
 #include "DSCharacterPlayer.generated.h"
 
 /**
@@ -135,6 +136,8 @@ public:
 
 	class UDSInventoryComponent* GetInventoryComponent() const;
 
+	class UDSInteractionComponent* GetInteractionComponent() const;
+
 // Animation Montage Section
 protected:
 	
@@ -158,7 +161,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSCharacterComboActionData> ComboActionData;
 
-	void ComboActionBegin();
 	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
 
 	void SetComboCheckTimer();
@@ -167,8 +169,10 @@ protected:
 	int CurrentCombo;
 
 	FTimerHandle ComboTimerHandle;
-	bool HasNextComboCommand;
+	TUniquePtr<IDSComboCommand> PendingComboCommand;
 public:
+	void ComboActionBegin();
+
 	void Move(const struct FInputActionValue& Value);
 
 	void RotateCharacterToMouseCursor();
@@ -235,4 +239,11 @@ protected:
 // ==================================================
 public:
 	FOnHealthChanged OnHealthChangedDelegate;
+
+// ==================================================
+// Tutorial Section
+// ==================================================
+public:
+	// 카메라 피킹(Shift) 사용 시 브로드캐스트
+	FSimpleMulticastDelegate OnCameraPeekStartedDelegate;
 };

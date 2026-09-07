@@ -18,7 +18,7 @@ void ADSGameState::OnCrystalDestroyed()
 	UE_LOG(LogTemp, Warning, TEXT("[ADSGameState] Crystal Destroyed: %d"), DestroyedCrystalCount);
 
 	// UI Update
-	// OnCrystalDestroyedDelegate.Broadcast(DestroyedCrystalCount);
+	OnCrystalDestroyedDelegate.Broadcast(DestroyedCrystalCount);
 
 	if (DestroyedCrystalCount >= TotalCrystalCount)
 	{

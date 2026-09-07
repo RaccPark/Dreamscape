@@ -62,6 +62,7 @@ void UDSInteractionComponent::ExecuteInteraction()
 	if (CurrentInteractable)
 	{
 		CurrentInteractable->Interact(Cast<ADSCharacterPlayer>(GetOwner()));
+		OnInteractedDelegate.Broadcast();
 	}
 }
 
