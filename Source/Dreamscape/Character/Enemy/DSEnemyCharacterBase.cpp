@@ -7,28 +7,95 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/DSEnemyAnimInstance.h"
 
+#include "Components/DSCharacterStatsComponent.h"
+#include "Components/DSVitalityComponent.h"
+
 // Sets default values
 ADSEnemyCharacterBase::ADSEnemyCharacterBase()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	MaxHealth = 3.0f;
-	CurrentHealth = MaxHealth;
+	// 체력은 컴포넌트가 소유한다. 최대 체력은 StatsComponent의 BaseMaxHealth(기본 3).
+	StatsComponent = CreateDefaultSubobject<UDSCharacterStatsComponent>(TEXT("StatsComponent"));
+	VitalityComponent = CreateDefaultSubobject<UDSVitalityComponent>(TEXT("VitalityComponent"));
+
 	ChaseStartRange = 300.0f;
 	AttackStartRange = 50.0f;
+}
+
+void ADSEnemyCharacterBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// 스탯 -> 체력 순서. Vitality가 Stats의 최대치를 읽어가므로 순서가 중요하다.
+	// ADSCharacterPlayer와 같은 흐름이다.
+	if (StatsComponent)
+	{
+		StatsComponent->InitializeStats();
+	}
+
+	if (VitalityComponent)
+	{
+		VitalityComponent->Initialize(StatsComponent);
+	}
 }
 
 // Called when the game starts or when spawned
 void ADSEnemyCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	EnemyAnimInstance = Cast<UDSEnemyAnimInstance>(GetMesh()->GetAnimInstance());
 
-	CurrentHealth = MaxHealth;
+	if (VitalityComponent)
+	{
+		VitalityComponent->OnDamaged.AddDynamic(this, &ADSEnemyCharacterBase::HandleDamaged);
+		VitalityComponent->OnDeath.AddDynamic(this, &ADSEnemyCharacterBase::HandleVitalityDeath);
+	}
+}
 
-	
+void ADSEnemyCharacterBase::ApplyDamage(float DamageAmount)
+{
+	if (!VitalityComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ADSEnemyCharacterBase] VitalityComponent is nullptr!"));
+		return;
+	}
+
+	// 히트 리액션과 사망 처리는 VitalityComponent의 이벤트를 통해 일어난다.
+	VitalityComponent->ApplyDamage(DamageAmount, this);
+}
+
+void ADSEnemyCharacterBase::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
+{
+	if (!VitalityComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ADSEnemyCharacterBase] VitalityComponent is nullptr!"));
+		return;
+	}
+
+	// 피해가 무시되었으면 넉백도 적용하지 않는다. 플레이어와 같은 규칙.
+	// 넉백 저항치는 EnemyStatsComponent를 만들 때 얹는다.
+	if (VitalityComponent->ApplyDamage(DamageAmount, this))
+	{
+		LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
+	}
+}
+
+void ADSEnemyCharacterBase::HandleDamaged(float DamageAmount, AActor* DamageInstigator)
+{
+	OnDamaged(DamageAmount);
+}
+
+void ADSEnemyCharacterBase::HandleVitalityDeath()
+{
+	OnDeath();
+}
+
+void ADSEnemyCharacterBase::OnDamaged(float DamageAmount)
+{
+	// 베이스는 아무것도 하지 않는다. 파생이 히트 리액션을 정한다.
 }
 
 void ADSEnemyCharacterBase::Attack()

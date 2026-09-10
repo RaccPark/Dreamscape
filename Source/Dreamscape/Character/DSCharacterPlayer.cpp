@@ -21,6 +21,9 @@
 #include "Components/DSPlayerFSMComponent.h"
 #include "Components/PlayerStateBase/DSPlayerStateBase.h"
 
+#include "Components/DSPlayerStatsComponent.h"
+#include "Components/DSPlayerVitalityComponent.h"
+
 #include "Animation/AnimMontage.h"
 
 #include "Character/DSCharacterComboActionData.h"
@@ -122,6 +125,10 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	// Player FSM Component
 	PlayerFSMComponent = CreateDefaultSubobject<UDSPlayerFSMComponent>(TEXT("PlayerFSMComponent"));
 
+	// Player Stats / Vitality Component
+	StatsComponent = CreateDefaultSubobject<UDSPlayerStatsComponent>(TEXT("StatsComponent"));
+	VitalityComponent = CreateDefaultSubobject<UDSPlayerVitalityComponent>(TEXT("VitalityComponent"));
+
 	// Player Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UDSInventoryComponent>(TEXT("InventoryComponent"));
 
@@ -143,13 +150,41 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	bUseControllerRotationYaw = false;
 
 	CurrentCombo = 0;
+}
 
-	bIsInvincible = false;
+void ADSCharacterPlayer::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// 스탯 -> 체력 순서로 초기화한다. Vitality가 Stats의 최대치를 읽어가기 때문에 순서가 중요하다.
+	// BeginPlay가 아니라 여기여야 HUD 위젯이 붙기 전에 값이 확정된다.
+	if (StatsComponent)
+	{
+		StatsComponent->InitializeStats();
+	}
+
+	if (VitalityComponent)
+	{
+		VitalityComponent->Initialize(StatsComponent);
+	}
 }
 
 void ADSCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 체력 이벤트를 FSM으로 넘기는 배선. 컴포넌트가 FSM을 직접 부르지 않도록 캐릭터가 중재한다.
+	if (VitalityComponent)
+	{
+		VitalityComponent->OnStaggered.AddDynamic(this, &ADSCharacterPlayer::HandleStaggered);
+		VitalityComponent->OnDeath.AddDynamic(this, &ADSCharacterPlayer::HandleVitalityDeath);
+	}
+
+	// 업그레이드로 이동 속도가 바뀌면 다시 적용한다.
+	if (StatsComponent)
+	{
+		StatsComponent->OnStatsChanged.AddDynamic(this, &ADSCharacterPlayer::ApplyMoveSpeedFromStats);
+	}
 
 	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
 	if (PlayerController)
@@ -268,6 +303,19 @@ void ADSCharacterPlayer::SetCharacterControlData(const UDSCharacterControlData* 
 	// Character Movement Settings
 	this->MaxWalkSpeed = CharacterControlData->MaxWalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed;
+
+	// 데이터 에셋이 MaxWalkSpeed를 덮어쓴 뒤여야 스탯 배수가 살아남는다.
+	ApplyMoveSpeedFromStats();
+}
+
+void ADSCharacterPlayer::ApplyMoveSpeedFromStats()
+{
+	if (!StatsComponent)
+	{
+		return;
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = this->MaxWalkSpeed * StatsComponent->GetMoveSpeedMultiplier();
 }
 
 void ADSCharacterPlayer::HandleMove(const struct FInputActionValue& Value)
@@ -510,6 +558,16 @@ UDSPlayerFSMComponent* ADSCharacterPlayer::GetPlayerFSMComponent() const
 	return PlayerFSMComponent;
 }
 
+UDSPlayerStatsComponent* ADSCharacterPlayer::GetStatsComponent() const
+{
+	return StatsComponent;
+}
+
+UDSPlayerVitalityComponent* ADSCharacterPlayer::GetVitalityComponent() const
+{
+	return VitalityComponent;
+}
+
 UInputMappingContext* ADSCharacterPlayer::GetDefaultMappingContext() const
 {
 	return DefaultMappingContext;
@@ -556,12 +614,23 @@ void ADSCharacterPlayer::SwordAttack(const FInputActionValue& Value)
 
 void ADSCharacterPlayer::OnDeath()
 {
-	if (OnDeathDelegate.IsBound())
-	{
-		OnDeathDelegate.Broadcast();
-	}
-
 	UE_LOG(LogTemp, Warning, TEXT("Player has died!"));
+}
+
+void ADSCharacterPlayer::HandleStaggered()
+{
+	if (PlayerFSMComponent)
+	{
+		PlayerFSMComponent->HandleHit();
+	}
+}
+
+void ADSCharacterPlayer::HandleVitalityDeath()
+{
+	if (PlayerFSMComponent)
+	{
+		PlayerFSMComponent->HandleDeath();
+	}
 }
 
 void ADSCharacterPlayer::PlayRollMontage()
@@ -719,48 +788,29 @@ ADSSwordWeaponBase* ADSCharacterPlayer::GetEquippedSwordWeapon() const
 
 void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
 {
-	if (!CanReceiveDamage())
+	if (!VitalityComponent)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] VitalityComponent is nullptr!"));
 		return;
 	}
 
-	CurrentHealth -= DamageAmount;
-	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
-	OnHealthChangedDelegate.Broadcast(CurrentHealth);
-
-	if (CurrentHealth <= 0.0f)
-	{
-		PlayerFSMComponent->HandleDeath();
-		return;
-	}
-
-	PlayerFSMComponent->HandleHit();
-
-	UE_LOG(LogTemp, Log, TEXT("ApplyDamage: %f"), DamageAmount);
+	// 경직·사망 전이는 VitalityComponent의 이벤트를 통해 일어난다.
+	VitalityComponent->ApplyDamage(DamageAmount, this);
 }
 
 void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
 {
-	ApplyDamage(DamageAmount);
-	LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
-}
-
-bool ADSCharacterPlayer::CanReceiveDamage()
-{
-	if (!PlayerFSMComponent)
+	if (!VitalityComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] PlayerFSMComponent is nullptr!"));
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] VitalityComponent is nullptr!"));
+		return;
 	}
 
-	EPlayerStateType CurrentState = PlayerFSMComponent->GetCurrentStateType();
-
-	if (CurrentState == EPlayerStateType::EPS_Roll || CurrentState == EPlayerStateType::EPS_Hit || CurrentState == EPlayerStateType::EPS_Death)
+	// 무적(구르기 등)으로 피해가 무시되었으면 넉백도 적용하지 않는다.
+	if (VitalityComponent->ApplyDamage(DamageAmount, this))
 	{
-		return false;
+		LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 	}
-
-	return true;
 }
 
 void ADSCharacterPlayer::StartAttackTrace()
@@ -855,4 +905,83 @@ void ADSCharacterPlayer::ComboCheck()
 	{
 		UE_LOG(LogTemp, Log, TEXT("[Command] ComboCheck: PendingComboCommand 없음 -> 콤보 종료 대기"));
 	}
+}
+
+void ADSCharacterPlayer::DSVital()
+{
+	if (!VitalityComponent || !StatsComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DSVital] Stats/Vitality 컴포넌트가 없습니다."));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSVital] 체력 %.0f/%.0f, 스테미나 %.2f/%.0f, 무적 %s, 사망 %s"),
+		VitalityComponent->GetCurrentHealth(), VitalityComponent->GetMaxHealth(),
+		VitalityComponent->GetCurrentStamina(), VitalityComponent->GetMaxStamina(),
+		VitalityComponent->IsInvincible() ? TEXT("O") : TEXT("X"),
+		VitalityComponent->IsDead() ? TEXT("O") : TEXT("X"));
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSVital] 공격력 %.2f, 보조 공격력 %.2f, 공격속도 x%.2f, 이동속도 x%.2f(=%.1f), 사거리 x%.2f, 구르기 쿨 %.2f초"),
+		StatsComponent->GetAttackPower(), StatsComponent->GetSubAttackPower(),
+		StatsComponent->GetAttackSpeedMultiplier(),
+		StatsComponent->GetMoveSpeedMultiplier(), GetCharacterMovement()->MaxWalkSpeed,
+		StatsComponent->GetAttackRangeMultiplier(), StatsComponent->GetRollCooldown());
+}
+
+void ADSCharacterPlayer::DSDamage(float Amount)
+{
+	// 무적 판정과 경직/사망 전이를 그대로 타도록 실제 피해 경로를 부른다.
+	ApplyDamage(Amount);
+
+	DSVital();
+}
+
+void ADSCharacterPlayer::DSStamina(float Amount)
+{
+	if (!VitalityComponent)
+	{
+		return;
+	}
+
+	const bool bConsumed = VitalityComponent->ConsumeStamina(Amount);
+	UE_LOG(LogTemp, Warning, TEXT("[DSStamina] 소모 %.2f -> %s"), Amount, bConsumed ? TEXT("성공") : TEXT("실패(부족)"));
+
+	DSVital();
+}
+
+void ADSCharacterPlayer::DSUpgrade(const FString& StatName, int32 Amount)
+{
+	if (!StatsComponent)
+	{
+		return;
+	}
+
+	EDSPlayerStatType StatType;
+	if (StatName.Equals(TEXT("Attack"), ESearchCase::IgnoreCase))
+	{
+		StatType = EDSPlayerStatType::AttackPower;
+	}
+	else if (StatName.Equals(TEXT("SubAttack"), ESearchCase::IgnoreCase))
+	{
+		StatType = EDSPlayerStatType::SubAttackPower;
+	}
+	else if (StatName.Equals(TEXT("Speed"), ESearchCase::IgnoreCase))
+	{
+		StatType = EDSPlayerStatType::AttackSpeed;
+	}
+	else if (StatName.Equals(TEXT("Mobility"), ESearchCase::IgnoreCase))
+	{
+		StatType = EDSPlayerStatType::Mobility;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DSUpgrade] 알 수 없는 스탯: %s (Attack / SubAttack / Speed / Mobility)"), *StatName);
+		return;
+	}
+
+	const bool bApplied = StatsComponent->AddUpgradePoint(StatType, Amount);
+	UE_LOG(LogTemp, Warning, TEXT("[DSUpgrade] %s +%d -> %s (현재 %d포인트)"),
+		*StatName, Amount, bApplied ? TEXT("적용") : TEXT("실패(상한)"), StatsComponent->GetUpgradePoint(StatType));
+
+	DSVital();
 }

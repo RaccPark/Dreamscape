@@ -4,6 +4,7 @@
 #include "UI/DSResourceBarWidget.h"
 
 #include "Character/DSCharacterPlayer.h"
+#include "Components/DSPlayerVitalityComponent.h"
 
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
@@ -23,8 +24,26 @@ void UDSResourceBarWidget::BindToPlayer(ADSCharacterPlayer* Player)
 		return;
 	}
 
-	Player->OnHealthChangedDelegate.AddDynamic(this, &UDSResourceBarWidget::UpdateHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Bind!"));
+	UDSVitalityComponent* VitalityComponent = Player->GetVitalityComponent();
+	if (!VitalityComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UDSResourceBarWidget] VitalityComponent가 없습니다."));
+		return;
+	}
+
+	VitalityComponent->OnHealthChanged.AddDynamic(this, &UDSResourceBarWidget::HandleHealthChanged);
+
+	// 초기 수치를 컴포넌트에서 받아온다. NativeConstruct의 InitHPBar()가 이 값으로 셀을 만든다.
+	HandleHealthChanged(VitalityComponent->GetCurrentHealth(), VitalityComponent->GetMaxHealth());
+}
+
+void UDSResourceBarWidget::HandleHealthChanged(float NewHealth, float NewMaxHealth)
+{
+	MaxHealth = FMath::RoundToInt32(NewMaxHealth);
+
+	UpdateHPBarBackground();
+
+	UpdateHealth(FMath::RoundToInt32(NewHealth));
 }
 
 void UDSResourceBarWidget::InitHPBar()
@@ -37,8 +56,7 @@ void UDSResourceBarWidget::InitHPBar()
 	HPCells.Empty();
 	HPBox_HorizontalBox->ClearChildren();
 
-	// Owner에게서 CurrentHealth와 MaxHealth를 받아오는 구간
-	// ...
+	// CurrentHealth / MaxHealth는 BindToPlayer()에서 UDSVitalityComponent의 값으로 이미 채워져 있다.
 
 	for (int32 i = 0; i < CurrentHealth; i++)
 	{
@@ -78,6 +96,10 @@ void UDSResourceBarWidget::SetMaxHealth(int32 NewMaxHealth)
 void UDSResourceBarWidget::AddHPCell()
 {
 	UImage* NewCell = CreateHPCell();
+	if (!NewCell || !HPBox_HorizontalBox)
+	{
+		return;
+	}
 
 	UHorizontalBoxSlot* BoxSlot = HPBox_HorizontalBox->AddChildToHorizontalBox(NewCell);
 

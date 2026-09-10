@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Types/DSEnemyState.h"
+#include "Interface/DSDamageableInterface.h"
 #include "DSEnemyCharacterBase.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnAttackEndedDelegate);
@@ -12,7 +13,7 @@ DECLARE_MULTICAST_DELEGATE(FOnAttackEndedDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 
 UCLASS(Abstract)
-class DREAMSCAPE_API ADSEnemyCharacterBase : public ACharacter
+class DREAMSCAPE_API ADSEnemyCharacterBase : public ACharacter, public IDSDamageableInterface
 {
 	GENERATED_BODY()
 
@@ -21,14 +22,18 @@ public:
 	ADSEnemyCharacterBase();
 
 protected:
+	virtual void PostInitializeComponents() override;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float MaxHealth;
+	// 스탯 컴포넌트. 최대 체력의 소유자다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TObjectPtr<class UDSCharacterStatsComponent> StatsComponent;
 
-	UPROPERTY(VisibleAnywhere, Category = "Stats")
-	float CurrentHealth;
+	// 현재 체력과 피격 상태. 플레이어와 공유하는 컴포넌트다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TObjectPtr<class UDSVitalityComponent> VitalityComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ChaseStartRange;
@@ -60,11 +65,31 @@ protected:
 	virtual void OnDeath();
 	virtual void DoRagdoll();
 
+	// VitalityComponent의 이벤트를 받는 중계 지점.
+	// 컴포넌트가 상태 머신·블랙보드를 직접 건드리지 않도록 캐릭터가 중재한다.
+	UFUNCTION()
+	void HandleDamaged(float DamageAmount, AActor* DamageInstigator);
+
+	UFUNCTION()
+	void HandleVitalityDeath();
+
+	// 히트 리액션. 파생이 정한다 —
+	// 일반 적은 경직·몽타주, 보스는 기획서상 경직하지 않으므로 비워 둔다.
+	virtual void OnDamaged(float DamageAmount);
+
 	FTimerHandle HitTimerHandle;
 
 	void OnStateChanged(EDSEnemyState NewState);
 
-public:	
+public:
+	// IDSDamageableInterface — 파생이 아니라 여기서 한 번만 구현한다.
+	virtual void ApplyDamage(float DamageAmount) override;
+	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
+
+	class UDSCharacterStatsComponent* GetStatsComponent() const { return StatsComponent; }
+	class UDSVitalityComponent* GetVitalityComponent() const { return VitalityComponent; }
+
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

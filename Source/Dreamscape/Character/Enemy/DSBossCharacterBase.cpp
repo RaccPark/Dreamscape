@@ -1,20 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Character/Enemy/DSBossCharacterBase.h"
 
-void ADSBossCharacterBase::ApplyDamage(float DamageAmount)
-{
-	CurrentHealth -= DamageAmount;
-	if (CurrentHealth <= 0.0f)
-	{
-		OnDeath();
-		return;
-	}
-}
-
 void ADSBossCharacterBase::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
 {
+	// 보스는 넉백되지 않는다. 베이스와 달리 LaunchCharacter를 부르지 않는다.
 	ApplyDamage(DamageAmount);
-	// LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 }

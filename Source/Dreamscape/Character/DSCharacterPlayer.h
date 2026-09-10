@@ -10,10 +10,8 @@
 #include "DSCharacterPlayer.generated.h"
 
 /**
- * 
+ *
  */
-DECLARE_MULTICAST_DELEGATE(FOnDeathDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, int32, NewHelath);
 
 UCLASS()
 class DREAMSCAPE_API ADSCharacterPlayer : public ADSCharacterBase, public IDSDamageableInterface, public IDSAttackTraceInterface
@@ -24,6 +22,8 @@ public:
 	ADSCharacterPlayer();
 
 protected:
+	virtual void PostInitializeComponents() override;
+
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaTime) override;
@@ -87,12 +87,16 @@ protected:
 
 	void OnInteractPressed(const struct FInputActionValue& Value);
 
+	// 데이터 에셋이 지정한 기준 이동 속도. 여기에 스탯 배수를 곱해 최종 속도를 만든다.
 	float DefaultMaxWalkSpeed;
 	float MaxWalkSpeed;
 
-	bool bIsInvincible;
-
 	ECharacterControlType CurrentCharacterControlType;
+
+	// 기준 이동 속도에 UDSPlayerStatsComponent의 이동 속도 배수를 적용한다.
+	// SetCharacterControlData()가 MaxWalkSpeed를 덮어쓰므로 반드시 그 뒤에 호출되어야 한다.
+	UFUNCTION()
+	void ApplyMoveSpeedFromStats();
 
 protected:
 	TObjectPtr<class USkeletalMesh> DefaultSkeletonMesh;
@@ -126,8 +130,16 @@ protected:
 	void UpdateCameraYaw(float DeltaTime);
 
 	// Player FSM Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Player, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSPlayerFSMComponent> PlayerFSMComponent;
+
+	// 스탯 컴포넌트. 최대 체력·스테미나와 업그레이드 포인트의 소유자다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Player, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSPlayerStatsComponent> StatsComponent;
+
+	// 현재 체력·스테미나와 피격 상태. 적과 공유하는 UDSVitalityComponent의 플레이어 파생
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Player, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSPlayerVitalityComponent> VitalityComponent;
 
 	// Inventory Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
@@ -159,6 +171,12 @@ public:
 	void AddCameraYaw(float DeltaYaw, bool bInstant = false);
 
 	UDSPlayerFSMComponent* GetPlayerFSMComponent() const;
+
+	UFUNCTION(BlueprintPure, Category = "Player")
+	class UDSPlayerStatsComponent* GetStatsComponent() const;
+
+	UFUNCTION(BlueprintPure, Category = "Player")
+	class UDSPlayerVitalityComponent* GetVitalityComponent() const;
 
 	class UInputMappingContext* GetDefaultMappingContext() const;
 
@@ -213,10 +231,8 @@ public:
 // Weapon Section
 // ==================================================
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", Meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ADSSwordWeaponBase> SwordWeaponToEquip;
-
-	class ADSSwordWeaponBase* EquippedSwordWeapon;
+	UPROPERTY()
+	TObjectPtr<class ADSSwordWeaponBase> EquippedSwordWeapon;
 
 public:
 	// 무기 장착
@@ -246,10 +262,13 @@ public:
 	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
 
 protected:
-	bool CanReceiveDamage();
+	// VitalityComponent의 이벤트를 FSM으로 넘기는 중계 지점.
+	// 컴포넌트가 FSM을 직접 부르지 않도록 캐릭터가 중재한다.
+	UFUNCTION()
+	void HandleStaggered();
 
-public:
-	FOnDeathDelegate OnDeathDelegate;
+	UFUNCTION()
+	void HandleVitalityDeath();
 
 // ==================================================
 // Inventory Test Section
@@ -261,12 +280,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSWeaponItemData> TestWeaponItemData01;
 
-
-// ==================================================
-// UI Section
-// ==================================================
-public:
-	FOnHealthChanged OnHealthChangedDelegate;
 
 // ==================================================
 // Tutorial Section
@@ -291,4 +304,24 @@ public:
 	// 카메라가 회전해도 이동이 계속 화면 기준 앞으로 가는지 검증하는 용도.
 	UFUNCTION(Exec)
 	void DSCamRotate(float DeltaYaw = 90.0f);
+
+// ==================================================
+// Stat / Vitality Tuning Section (PIE 콘솔 전용)
+// ==================================================
+public:
+	// DSVital : 현재 체력·스테미나·무적 여부와 파생 스탯을 로그로 출력
+	UFUNCTION(Exec)
+	void DSVital();
+
+	// DSDamage <Amount> : 자기 자신에게 피해를 준다. 무적 판정과 경직 전이를 그대로 탄다.
+	UFUNCTION(Exec)
+	void DSDamage(float Amount = 1.0f);
+
+	// DSStamina <Amount> : 스테미나를 소모한다. 자동 회복 확인용
+	UFUNCTION(Exec)
+	void DSStamina(float Amount = 1.0f);
+
+	// DSUpgrade <Attack|SubAttack|Speed|Mobility> <포인트> : 업그레이드 포인트를 올린다
+	UFUNCTION(Exec)
+	void DSUpgrade(const FString& StatName, int32 Amount = 1);
 };

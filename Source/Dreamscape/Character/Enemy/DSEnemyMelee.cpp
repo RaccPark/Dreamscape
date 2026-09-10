@@ -54,15 +54,10 @@ void ADSEnemyMelee::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ADSEnemyMelee::ApplyDamage(float DamageAmount)
+void ADSEnemyMelee::OnDamaged(float DamageAmount)
 {
-	CurrentHealth -= DamageAmount;
-	if (CurrentHealth <= 0.0f)
-	{
-		OnDeath();
-		return;
-	}
-
+	// 체력 차감과 사망 판정은 UDSVitalityComponent가 이미 끝냈다.
+	// 여기서는 히트 리액션만 처리한다.
 	if (HitReactMontage)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Playing hit react montage!"));
@@ -81,12 +76,6 @@ void ADSEnemyMelee::ApplyDamage(float DamageAmount)
 			EnemyAIController->GetBlackboardComponent()->SetValueAsBool(FName("IsHitted"), false);
 			}, 0.5f, false); // 0.5초 후에 피격 상태 해제
 	}
-}
-
-void ADSEnemyMelee::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
-{
-	ApplyDamage(DamageAmount);
-	LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 }
 
 void ADSEnemyMelee::Attack()
