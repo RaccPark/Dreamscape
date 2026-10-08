@@ -1,11 +1,11 @@
 ﻿#include "Character/DSComboCommand.h"
-#include "Character/DSCharacterPlayer.h"
+#include "Components/DSPlayerCombatComponent.h"
 
-void DSSwordAttackCommand::Execute(ADSCharacterPlayer* Player)
+void DSSwordAttackCommand::Execute(UDSPlayerCombatComponent* Combat)
 {
-	if (Player)
+	if (Combat)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[Command] DSSwordAttackCommand::Execute -> ComboActionBegin() 호출"));
-		Player->ComboActionBegin();
+		Combat->ComboActionBegin();
 	}
 }

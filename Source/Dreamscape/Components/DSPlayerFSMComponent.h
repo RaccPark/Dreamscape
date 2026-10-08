@@ -62,7 +62,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	UPROPERTY()
+	//UPROPERTY()
 	TObjectPtr<UDSPlayerStateBase> CurrentState;
 
 	UPROPERTY()

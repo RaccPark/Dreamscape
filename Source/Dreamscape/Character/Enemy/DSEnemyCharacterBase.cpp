@@ -55,7 +55,7 @@ void ADSEnemyCharacterBase::BeginPlay()
 	}
 }
 
-void ADSEnemyCharacterBase::ApplyDamage(float DamageAmount)
+void ADSEnemyCharacterBase::ApplyDamage(float DamageAmount, EDSDamageType DamageType)
 {
 	if (!VitalityComponent)
 	{
@@ -64,10 +64,10 @@ void ADSEnemyCharacterBase::ApplyDamage(float DamageAmount)
 	}
 
 	// 히트 리액션과 사망 처리는 VitalityComponent의 이벤트를 통해 일어난다.
-	VitalityComponent->ApplyDamage(DamageAmount, this);
+	VitalityComponent->ApplyDamage(DamageAmount, DamageType, this);
 }
 
-void ADSEnemyCharacterBase::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
+void ADSEnemyCharacterBase::ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength)
 {
 	if (!VitalityComponent)
 	{
@@ -77,15 +77,15 @@ void ADSEnemyCharacterBase::ApplyDamageWithKnockback(float DamageAmount, const F
 
 	// 피해가 무시되었으면 넉백도 적용하지 않는다. 플레이어와 같은 규칙.
 	// 넉백 저항치는 EnemyStatsComponent를 만들 때 얹는다.
-	if (VitalityComponent->ApplyDamage(DamageAmount, this))
+	if (VitalityComponent->ApplyDamage(DamageAmount, DamageType, this))
 	{
 		LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 	}
 }
 
-void ADSEnemyCharacterBase::HandleDamaged(float DamageAmount, AActor* DamageInstigator)
+void ADSEnemyCharacterBase::HandleDamaged(float DamageAmount, EDSDamageType DamageType, AActor* DamageInstigator)
 {
-	OnDamaged(DamageAmount);
+	OnDamaged(DamageAmount, DamageType);
 }
 
 void ADSEnemyCharacterBase::HandleVitalityDeath()
@@ -93,7 +93,7 @@ void ADSEnemyCharacterBase::HandleVitalityDeath()
 	OnDeath();
 }
 
-void ADSEnemyCharacterBase::OnDamaged(float DamageAmount)
+void ADSEnemyCharacterBase::OnDamaged(float DamageAmount, EDSDamageType DamageType)
 {
 	// 베이스는 아무것도 하지 않는다. 파생이 히트 리액션을 정한다.
 }

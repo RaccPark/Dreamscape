@@ -23,11 +23,11 @@
 
 #include "Components/DSPlayerStatsComponent.h"
 #include "Components/DSPlayerVitalityComponent.h"
+#include "Components/DSPlayerCombatComponent.h"
 
 #include "Animation/AnimMontage.h"
 
 #include "Character/DSCharacterComboActionData.h"
-#include "Weapon/DSSwordWeaponBase.h"
 #include "Weapon/Data/DSWeaponItemData.h"
 
 #include "Components/DSInventoryComponent.h"
@@ -125,9 +125,10 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	// Player FSM Component
 	PlayerFSMComponent = CreateDefaultSubobject<UDSPlayerFSMComponent>(TEXT("PlayerFSMComponent"));
 
-	// Player Stats / Vitality Component
+	// Player Stats / Vitality / Combat Component
 	StatsComponent = CreateDefaultSubobject<UDSPlayerStatsComponent>(TEXT("StatsComponent"));
 	VitalityComponent = CreateDefaultSubobject<UDSPlayerVitalityComponent>(TEXT("VitalityComponent"));
+	CombatComponent = CreateDefaultSubobject<UDSPlayerCombatComponent>(TEXT("CombatComponent"));
 
 	// Player Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UDSInventoryComponent>(TEXT("InventoryComponent"));
@@ -148,8 +149,6 @@ ADSCharacterPlayer::ADSCharacterPlayer()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	bUseControllerRotationYaw = false;
-
-	CurrentCombo = 0;
 }
 
 void ADSCharacterPlayer::PostInitializeComponents()
@@ -186,6 +185,12 @@ void ADSCharacterPlayer::BeginPlay()
 		StatsComponent->OnStatsChanged.AddDynamic(this, &ADSCharacterPlayer::ApplyMoveSpeedFromStats);
 	}
 
+	// 공격 시퀀스(콤보 + 회복)가 끝나면 FSM에 알린다. 컴포넌트는 FSM을 직접 부르지 않는다.
+	if (CombatComponent)
+	{
+		CombatComponent->OnAttackSequenceEnded.AddDynamic(this, &ADSCharacterPlayer::HandleAttackSequenceEnded);
+	}
+
 	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
 	if (PlayerController)
 	{
@@ -209,7 +214,10 @@ void ADSCharacterPlayer::BeginPlay()
 
 		if (bResult)
 		{
-			EquipSwordWeapon(DefaultWeaponItemData);
+			if (CombatComponent)
+			{
+				CombatComponent->EquipWeapon(DefaultWeaponItemData);
+			}
 			UE_LOG(LogTemp, Warning, TEXT("Item added to inventory successfully."));
 		}
 		else
@@ -568,6 +576,11 @@ UDSPlayerVitalityComponent* ADSCharacterPlayer::GetVitalityComponent() const
 	return VitalityComponent;
 }
 
+UDSPlayerCombatComponent* ADSCharacterPlayer::GetCombatComponent() const
+{
+	return CombatComponent;
+}
+
 UInputMappingContext* ADSCharacterPlayer::GetDefaultMappingContext() const
 {
 	return DefaultMappingContext;
@@ -701,92 +714,7 @@ void ADSCharacterPlayer::RotateCharacterToMouseCursor()
 	}
 }
 
-void ADSCharacterPlayer::ProcessComboCommand()
-{
-	if (CurrentCombo == 0)
-	{
-		// 즉시 실행 — Command 생성 후 바로 Execute (PDF 구현방법1 구조)
-		UE_LOG(LogTemp, Log, TEXT("[Command] ProcessComboCommand: 첫 공격 -> DSSwordAttackCommand 생성 후 즉시 Execute"));
-		TUniquePtr<IDSComboCommand> Cmd = MakeUnique<DSSwordAttackCommand>();
-		Cmd->Execute(this);
-		return;
-	}
-
-	if (ComboTimerHandle.IsValid())
-	{
-		// 버퍼에 적재 — 타이머 만료 시점에 실행 (PDF 구현방법2 구조)
-		UE_LOG(LogTemp, Log, TEXT("[Command] ProcessComboCommand: 콤보 %d 진행 중 -> PendingComboCommand 적재"), CurrentCombo);
-		PendingComboCommand = MakeUnique<DSSwordAttackCommand>();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Command] ProcessComboCommand: 타이머 만료 후 입력 -> 커맨드 버림 (유효 타이밍 아님)"));
-	}
-}
-
-void ADSCharacterPlayer::EquipSwordWeapon(const UDSWeaponItemData* NewWeaponData)
-{
-	if (!NewWeaponData)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("NewWeaponData is not set!"));
-		return;
-	}
-
-	// 기존 무기 해제
-	if (EquippedSwordWeapon)
-	{
-		EquippedSwordWeapon->Destroy();
-		EquippedSwordWeapon = nullptr;
-	}
-
-	// 새로운 무기 장착
-	FName SocketName = TEXT("WeaponIdleSocket");	// 등 뒤 장착(무기 Idle)
-	FVector SpawnLocation = GetMesh()->GetSocketLocation(SocketName);
-	FRotator SpawnRotation = GetMesh()->GetSocketRotation(SocketName);
-
-	// Spawn 정보 구체화
-	// SpawnActor()의 호출 시 생성 동작을 세밀하게 제어하기 위한 구조체
-	// Owner과 Istigator(행동의 주체) 설정이 필요할 때 사용
-	// 데미지 전달, 팀 판정, AI 인식 등에 중요
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = GetInstigator();
-
-	ADSSwordWeaponBase* SpawnedWeapon = GetWorld()->SpawnActor<ADSSwordWeaponBase>(NewWeaponData->SwordWeaponClass, SpawnLocation, SpawnRotation, SpawnParams);
-	if (SpawnedWeapon)
-	{
-		SpawnedWeapon->InitializeWeapon(NewWeaponData);
-
-		SpawnedWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
-	}
-
-	EquippedSwordWeapon = SpawnedWeapon;
-	UE_LOG(LogTemp, Log, TEXT("Equipped new sword weapon: %s"), *NewWeaponData->GetName());
-}
-
-void ADSCharacterPlayer::SetEquippedWeaponSocket(FName SocketName)
-{
-	if (!EquippedSwordWeapon)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("EquippedSwordWeapon is not set!"));
-		return;
-	}
-	// 소켓에서 장착 해제
-	EquippedSwordWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	EquippedSwordWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
-}
-
-ADSSwordWeaponBase* ADSCharacterPlayer::GetEquippedSwordWeapon() const
-{
-	if(!EquippedSwordWeapon)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("EquippedSwordWeapon is not set!"));
-		return nullptr;
-	}
-	return EquippedSwordWeapon;
-}
-
-void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
+void ADSCharacterPlayer::ApplyDamage(float DamageAmount, EDSDamageType DamageType)
 {
 	if (!VitalityComponent)
 	{
@@ -795,10 +723,10 @@ void ADSCharacterPlayer::ApplyDamage(float DamageAmount)
 	}
 
 	// 경직·사망 전이는 VitalityComponent의 이벤트를 통해 일어난다.
-	VitalityComponent->ApplyDamage(DamageAmount, this);
+	VitalityComponent->ApplyDamage(DamageAmount, DamageType, this);
 }
 
-void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
+void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength)
 {
 	if (!VitalityComponent)
 	{
@@ -807,103 +735,9 @@ void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, const FVec
 	}
 
 	// 무적(구르기 등)으로 피해가 무시되었으면 넉백도 적용하지 않는다.
-	if (VitalityComponent->ApplyDamage(DamageAmount, this))
+	if (VitalityComponent->ApplyDamage(DamageAmount, DamageType, this))
 	{
 		LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
-	}
-}
-
-void ADSCharacterPlayer::StartAttackTrace()
-{
-	if (GetEquippedSwordWeapon())
-	{
-		EquippedSwordWeapon->StartAttackTrace();
-		// 임시 캐릭터 런치
-		LaunchCharacter(GetActorForwardVector() * 600.f, true, true);
-	}
-}
-
-void ADSCharacterPlayer::PerformAttackTrace()
-{
-	if (GetEquippedSwordWeapon())
-	{
-		EquippedSwordWeapon->PerformTrace();
-	}
-}
-
-void ADSCharacterPlayer::EndAttackTrace()
-{
-	if (GetEquippedSwordWeapon())
-	{
-		EquippedSwordWeapon->EndAttackTrace();
-	}
-}
-
-void ADSCharacterPlayer::ComboActionBegin()
-{
-	CurrentCombo = 1;
-	
-	const float AttackSpeedRate = 1.0f;
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (!AnimInstance)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimInstance is not valid!"));
-		return;
-	}
-	AnimInstance->Montage_Play(SwordAttackMontage, AttackSpeedRate);
-
-	FOnMontageEnded EndDelegate;
-	EndDelegate.BindUObject(this, &ADSCharacterPlayer::ComboActionEnd);
-	AnimInstance->Montage_SetEndDelegate(EndDelegate, SwordAttackMontage);
-
-	ComboTimerHandle.Invalidate();
-	SetComboCheckTimer();
-}
-
-void ADSCharacterPlayer::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
-{
-	ensure(CurrentCombo != 0);
-	CurrentCombo = 0;
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-
-	//PlayerFSMComponent->ChangeState(EPlayerStateType::EPS_Idle);
-	PlayerFSMComponent->HandleComboActionEnd();
-}
-
-void ADSCharacterPlayer::SetComboCheckTimer()
-{
-	int32 ComboIndex = CurrentCombo - 1;
-	ensure(ComboActionData->EffectiveFrameCounts.IsValidIndex(ComboIndex));
-
-	const float AttackSpeedRate = 1.0f;
-	// 발동된 시간을 알기 위하여 ComboActionData에서 EffectiveFrameCounts와 FrameRate를 이용하여 계산
-	float ComboEffectiveTime = (ComboActionData->EffectiveFrameCounts[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
-	if (ComboEffectiveTime > 0.0f)
-	{
-		GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, this, &ADSCharacterPlayer::ComboCheck, ComboEffectiveTime, false);
-	}
-}
-
-void ADSCharacterPlayer::ComboCheck()
-{
-	ComboTimerHandle.Invalidate();
-	if (PendingComboCommand)
-	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
-		UE_LOG(LogTemp, Log, TEXT("[Command] ComboCheck: PendingComboCommand 소비 -> 콤보 %d 섹션으로 점프"), CurrentCombo);
-
-		FName NextSectionName = *FString::Printf(TEXT("%s%d"), *ComboActionData->MontageSectionNameProfix, CurrentCombo);
-		AnimInstance->Montage_JumpToSection(NextSectionName, SwordAttackMontage);
-
-		SetComboCheckTimer();
-		PendingComboCommand.Reset();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("[Command] ComboCheck: PendingComboCommand 없음 -> 콤보 종료 대기"));
 	}
 }
 
@@ -931,7 +765,7 @@ void ADSCharacterPlayer::DSVital()
 void ADSCharacterPlayer::DSDamage(float Amount)
 {
 	// 무적 판정과 경직/사망 전이를 그대로 타도록 실제 피해 경로를 부른다.
-	ApplyDamage(Amount);
+	ApplyDamage(Amount, EDSDamageType::EnemyAttack);
 
 	DSVital();
 }
@@ -984,4 +818,90 @@ void ADSCharacterPlayer::DSUpgrade(const FString& StatName, int32 Amount)
 		*StatName, Amount, bApplied ? TEXT("적용") : TEXT("실패(상한)"), StatsComponent->GetUpgradePoint(StatType));
 
 	DSVital();
+}
+
+// ==================================================
+// Attack Trace Interface — CombatComponent에 위임
+// ==================================================
+
+void ADSCharacterPlayer::StartAttackTrace()
+{
+	if (CombatComponent)
+	{
+		CombatComponent->StartAttackTrace();
+	}
+}
+
+void ADSCharacterPlayer::PerformAttackTrace()
+{
+	if (CombatComponent)
+	{
+		CombatComponent->PerformAttackTrace();
+	}
+}
+
+void ADSCharacterPlayer::EndAttackTrace()
+{
+	if (CombatComponent)
+	{
+		CombatComponent->EndAttackTrace();
+	}
+}
+
+void ADSCharacterPlayer::HandleAttackSequenceEnded()
+{
+	if (PlayerFSMComponent)
+	{
+		PlayerFSMComponent->HandleComboActionEnd();
+	}
+}
+
+// ==================================================
+// Combat Tuning (PIE 콘솔 전용)
+// ==================================================
+
+void ADSCharacterPlayer::DSCombat()
+{
+	if (!CombatComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DSCombat] CombatComponent가 없습니다."));
+		return;
+	}
+
+	const UDSWeaponItemData* WeaponData = CombatComponent->GetEquippedWeaponData();
+	if (!WeaponData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DSCombat] 장착된 무기가 없습니다."));
+		return;
+	}
+
+	const int32 ComboCount = WeaponData->ComboActionData ? static_cast<int32>(WeaponData->ComboActionData->MaxComboCount) : 0;
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSCombat] 무기 %s | 콤보 %d회 | 배수 x%.2f | 회복 %.2f초 | 런치 %.0f"),
+		*WeaponData->GetName(), ComboCount, WeaponData->DamageMultiplier, WeaponData->RecoveryTime, WeaponData->LungeImpulse);
+
+	UE_LOG(LogTemp, Warning, TEXT("[DSCombat] 최종 피해 %.2f | 배속 x%.2f | 최종 회복 %.2f초 | 회복 중 %s"),
+		CombatComponent->CalculateDamage(), CombatComponent->GetAttackPlayRate(),
+		CombatComponent->GetRecoveryTime(),
+		CombatComponent->IsRecovering() ? TEXT("O") : TEXT("X"));
+
+	// 콤보별 선입력 창이 열리는 시각 (현재 배속 기준). 섹션 길이보다 커지면 콤보가 끊긴다.
+	FString WindowLog;
+	for (int32 Combo = 1; Combo <= ComboCount; ++Combo)
+	{
+		const float OpenTime = CombatComponent->GetComboWindowOpenTime(Combo);
+		WindowLog += FString::Printf(TEXT("%d타 %.2fs  "), Combo, OpenTime);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("[DSCombat] 선입력 창 열림: %s"), *WindowLog);
+}
+
+void ADSCharacterPlayer::DSWeaponTrace(int32 bEnabled)
+{
+	if (!CombatComponent)
+	{
+		return;
+	}
+
+	CombatComponent->SetDrawWeaponTrace(bEnabled != 0);
+	UE_LOG(LogTemp, Warning, TEXT("[DSWeaponTrace] 무기 트레이스 드로우 %s"), bEnabled != 0 ? TEXT("ON") : TEXT("OFF"));
 }

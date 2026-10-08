@@ -3,20 +3,24 @@
 
 #include "Weapon/DSSwordWeaponBase.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Character/DSCharacterPlayer.h"
-#include "DrawDebugHelpers.h"
 #include "Interface/DSDamageableInterface.h"
 #include "Weapon/Data/DSWeaponItemData.h"
 
-// Sets default values
 ADSSwordWeaponBase::ADSSwordWeaponBase()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	// 판정은 소유자가 애님 노티파이 타이밍에 직접 부른다. 자체 틱은 필요 없다.
+	PrimaryActorTick.bCanEverTick = false;
 
 	SwordWeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordWeaponMesh"));
 	SetRootComponent(SwordWeaponMesh);
 	SwordWeaponMesh->SetCollisionProfileName(TEXT("NoCollision"));
+
+	// 종전 하드코딩 값 그대로
+	TraceRadius = 12.0f;
+	TraceHalfHeight = 30.0f;
+	bDrawTrace = false;
+
+	DamageAmount = 0.0f;
 }
 
 void ADSSwordWeaponBase::InitializeWeapon(const UDSWeaponItemData* WeaponData)
@@ -24,105 +28,71 @@ void ADSSwordWeaponBase::InitializeWeapon(const UDSWeaponItemData* WeaponData)
 	if (WeaponData)
 	{
 		DamageAmount = WeaponData->DamageAmount;
-		AttackRate = WeaponData->AttackRate;
-
-		UE_LOG(LogTemp, Warning, TEXT("Weapon Initialized: Damage = %f, AttackRate = %f"), DamageAmount, AttackRate);
+		UE_LOG(LogTemp, Log, TEXT("[ADSSwordWeaponBase] 초기화: %s"), *WeaponData->GetName());
 	}
 }
 
-// Called when the game starts or when spawned
-void ADSSwordWeaponBase::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
-
-// Called every frame
-void ADSSwordWeaponBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
+// ==================================================
+// 판정
+// ==================================================
 
 void ADSSwordWeaponBase::StartAttackTrace()
 {
 	HitActors.Empty();
 }
 
-
 void ADSSwordWeaponBase::EndAttackTrace()
 {
 	HitActors.Empty();
 }
 
-void ADSSwordWeaponBase::PerformTrace()
+void ADSSwordWeaponBase::CollectHits(TArray<AActor*>& OutNewHits)
 {
-	if (!SwordWeaponMesh->DoesSocketExist("Start"))
+	if (!SwordWeaponMesh->DoesSocketExist("Start") || !SwordWeaponMesh->DoesSocketExist("End"))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Sockets 'Start' do not exist on the sword mesh!"));
+		UE_LOG(LogTemp, Warning, TEXT("[ADSSwordWeaponBase] 무기 메시에 Start/End 소켓이 없습니다."));
+		return;
 	}
 
-	if (!SwordWeaponMesh->DoesSocketExist("End"))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Sockets 'End' do not exist on the sword mesh!"));
-	}
-
-	FVector Start = SwordWeaponMesh->GetSocketLocation("Start");
-	FVector End = SwordWeaponMesh->GetSocketLocation("End");
-
-	float TraceRadius = 12.f;
-	float HalfHeight = 30.f;
-
-
-
-	//DrawDebugSphere(GetWorld(), Start, TraceRadius, 12, FColor::Green, false, 2.f);
-	//DrawDebugSphere(GetWorld(), End, TraceRadius, 12, FColor::Blue, false, 2.f);
-
-	//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.f, 0, 2.f);
+	const FVector Start = SwordWeaponMesh->GetSocketLocation("Start");
+	const FVector End = SwordWeaponMesh->GetSocketLocation("End");
 
 	TArray<FHitResult> Hits;
-
 	UKismetSystemLibrary::CapsuleTraceMulti(
-		GetWorld(),
-		Start,
-		End,
-		TraceRadius,
-		HalfHeight,
+		GetWorld(), Start, End, TraceRadius, TraceHalfHeight,
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1),
-		false,
-		HitActors,
-		EDrawDebugTrace::None,
-		Hits,
-		true
-	);
-
-	//UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, TraceRadius, UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel1), false, HitActors, EDrawDebugTrace::None, Hits, true);
+		false, HitActors,
+		bDrawTrace ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None,
+		Hits, true);
 
 	AActor* OwnerActor = GetOwner();
 
-	for (auto& Hit : Hits)
+	// 한 스윙에 같은 액터는 한 번만. 칼이 지나가는 순서대로 쌓인다.
+	for (const FHitResult& Hit : Hits)
 	{
 		AActor* HitActor = Hit.GetActor();
-
-		if (HitActor && HitActor == OwnerActor)
+		if (!HitActor || HitActor == OwnerActor || HitActors.Contains(HitActor))
 		{
-			continue; // Skip the owner of the weapon
+			continue;
 		}
 
-		if (HitActor && !HitActors.Contains(HitActor))
-		{
-			HitActors.Add(HitActor);
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
-
-			// Deal damage to the hit actor or apply any other effects here
-			IDSDamageableInterface* DamageableActor = Cast<IDSDamageableInterface>(HitActor);
-			if (DamageableActor)
-			{
-				// Example damage application
-				FVector KnockbackDirection = (HitActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-				FVector KnockbackNoHeightDirection = FVector(KnockbackDirection.X, KnockbackDirection.Y, 0.f).GetSafeNormal();
-				DamageableActor->ApplyDamageWithKnockback(DamageAmount, KnockbackNoHeightDirection, 250.f); // Example knockback
-			}
-		}
+		HitActors.Add(HitActor);
+		OutNewHits.Add(HitActor);
 	}
 }
 
+void ADSSwordWeaponBase::PerformTrace()
+{
+	TArray<AActor*> NewHits;
+	CollectHits(NewHits);
+
+	for (AActor* HitActor : NewHits)
+	{
+		if (IDSDamageableInterface* Damageable = Cast<IDSDamageableInterface>(HitActor))
+		{
+			FVector KnockbackDirection = HitActor->GetActorLocation() - GetActorLocation();
+			KnockbackDirection.Z = 0.f;
+			Damageable->ApplyDamageWithKnockback(DamageAmount, EDSDamageType::EnemyAttack, KnockbackDirection.GetSafeNormal(), 250.f);
+		}
+	}
+}

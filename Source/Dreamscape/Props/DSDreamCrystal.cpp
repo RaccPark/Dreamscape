@@ -33,7 +33,7 @@ void ADSDreamCrystal::Tick(float DeltaTime)
 
 }
 
-void ADSDreamCrystal::ApplyDamage(float DamageAmount)
+void ADSDreamCrystal::ApplyDamage(float DamageAmount, EDSDamageType DamageType)
 {
 	if (bDestroyed)
 	{
@@ -48,9 +48,9 @@ void ADSDreamCrystal::ApplyDamage(float DamageAmount)
 	DestroyCrystal();
 }
 
-void ADSDreamCrystal::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
+void ADSDreamCrystal::ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType,const FVector& KnockbackDirection, float KnockbackStrength)
 {
-	ApplyDamage(DamageAmount);
+	ApplyDamage(DamageAmount, DamageType);
 }
 
 void ADSDreamCrystal::DestroyCrystal()

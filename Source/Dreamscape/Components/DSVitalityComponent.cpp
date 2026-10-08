@@ -55,7 +55,7 @@ float UDSVitalityComponent::SanitizeDamage(float RawDamage) const
 	return RawDamage;
 }
 
-bool UDSVitalityComponent::ApplyDamage(float DamageAmount, AActor* DamageInstigator)
+bool UDSVitalityComponent::ApplyDamage(float DamageAmount, EDSDamageType DamageType, AActor* DamageInstigator)
 {
 	if (bIsDead || bIsInvincible || DamageAmount <= 0.0f)
 	{
@@ -71,7 +71,7 @@ bool UDSVitalityComponent::ApplyDamage(float DamageAmount, AActor* DamageInstiga
 	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0.0f, CachedMaxHealth);
 
 	OnHealthChanged.Broadcast(CurrentHealth, CachedMaxHealth);
-	OnDamaged.Broadcast(FinalDamage, DamageInstigator);
+	OnDamaged.Broadcast(FinalDamage, DamageType, DamageInstigator);
 
 	UE_LOG(LogTemp, Log, TEXT("[UDSVitalityComponent] %s 피해 %.2f -> 체력 %.2f / %.2f"),
 		*GetNameSafe(GetOwner()), FinalDamage, CurrentHealth, CachedMaxHealth);

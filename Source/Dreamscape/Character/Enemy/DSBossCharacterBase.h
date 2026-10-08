@@ -18,7 +18,7 @@ class DREAMSCAPE_API ADSBossCharacterBase : public ADSEnemyCharacterBase
 
 public:
 	// 보스는 넉백되지 않는다. 피해만 적용하고 LaunchCharacter는 건너뛴다.
-	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
+	virtual void ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength) override;
 
 	FOnBossLandingFinished OnBossLandingFinishedDelegate;
 };

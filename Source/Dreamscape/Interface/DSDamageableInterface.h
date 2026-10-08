@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Types/DSDamageTypes.h"
 #include "DSDamageableInterface.generated.h"
 
 // This class does not need to be modified.
@@ -22,6 +23,6 @@ class DREAMSCAPE_API IDSDamageableInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void ApplyDamage(float DamageAmount) = 0;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) = 0;
+	virtual void ApplyDamage(float DamageAmount, EDSDamageType DamageType) = 0;
+	virtual void ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength) = 0;
 };

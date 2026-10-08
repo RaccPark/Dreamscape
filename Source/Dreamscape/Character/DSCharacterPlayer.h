@@ -6,7 +6,6 @@
 #include "Character/DSCharacterBase.h"
 #include "Interface/DSDamageableInterface.h"
 #include "Interface/DSAttackTraceInterface.h"
-#include "Character/DSComboCommand.h"
 #include "DSCharacterPlayer.generated.h"
 
 /**
@@ -141,6 +140,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Player, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSPlayerVitalityComponent> VitalityComponent;
 
+	// 기본 공격 — 콤보 · 히트박스 판정 · 피해 계산 · 무기 장착
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Player, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDSPlayerCombatComponent> CombatComponent;
+
 	// Inventory Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDSInventoryComponent> InventoryComponent;
@@ -178,6 +181,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Player")
 	class UDSPlayerVitalityComponent* GetVitalityComponent() const;
 
+	UFUNCTION(BlueprintPure, Category = "Player")
+	class UDSPlayerCombatComponent* GetCombatComponent() const;
+
 	class UInputMappingContext* GetDefaultMappingContext() const;
 
 	class UDSInventoryComponent* GetInventoryComponent() const;
@@ -199,58 +205,29 @@ public:
 	void PlayHitMontage();
 
 
-// Combo Action Section
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<class UAnimMontage> SwordAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack", Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UDSCharacterComboActionData> ComboActionData;
-
-	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
-
-	void SetComboCheckTimer();
-	void ComboCheck();
-
-	int CurrentCombo;
-
-	FTimerHandle ComboTimerHandle;
-	TUniquePtr<IDSComboCommand> PendingComboCommand;
 public:
-	void ComboActionBegin();
-
 	void Move(const struct FInputActionValue& Value);
 
+	// 공격 시작 시 마우스 커서 방향으로 즉시 회전. SwordAttack 상태가 부른다.
 	void RotateCharacterToMouseCursor();
-	void ProcessComboCommand();
 
 	virtual void OnDeath() override;
 	void OnRollEnd();
-	
-// ==================================================
-// Weapon Section
-// ==================================================
-protected:
-	UPROPERTY()
-	TObjectPtr<class ADSSwordWeaponBase> EquippedSwordWeapon;
-
-public:
-	// 무기 장착
-	void EquipSwordWeapon(const class UDSWeaponItemData* NewWeaponData);
-
-public:
-	// 소켓 위치에 따른 무기 장착
-	void SetEquippedWeaponSocket(FName SocketName);
-
-	class ADSSwordWeaponBase* GetEquippedSwordWeapon() const;
 
 // ==================================================
-// Attack Trace Interface Section(For Weapon)
+// Attack Trace Interface Section
 // ==================================================
+// UDSAnimNotifyState_Attack이 소유 액터를 이 인터페이스로 캐스팅하므로 캐릭터가 받는다.
+// 실제 판정은 CombatComponent에 위임한다.
 public:
 	virtual void StartAttackTrace() override;
 	virtual void PerformAttackTrace() override;
 	virtual void EndAttackTrace() override;
+
+protected:
+	// CombatComponent의 공격 시퀀스 종료 이벤트를 FSM으로 넘긴다.
+	UFUNCTION()
+	void HandleAttackSequenceEnded();
 
 
 // ==================================================
@@ -258,8 +235,8 @@ public:
 // ==================================================
 public:
 	// Interface
-	virtual void ApplyDamage(float DamageAmount) override;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
+	virtual void ApplyDamage(float DamageAmount, EDSDamageType DamageType) override;
+	virtual void ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength) override;
 
 protected:
 	// VitalityComponent의 이벤트를 FSM으로 넘기는 중계 지점.
@@ -324,4 +301,16 @@ public:
 	// DSUpgrade <Attack|SubAttack|Speed|Mobility> <포인트> : 업그레이드 포인트를 올린다
 	UFUNCTION(Exec)
 	void DSUpgrade(const FString& StatName, int32 Amount = 1);
+
+// ==================================================
+// Combat Tuning Section (PIE 콘솔 전용)
+// ==================================================
+public:
+	// DSCombat : 현재 무기 · 최종 피해 · 배속 · 회복 시간 · 콤보 창을 로그로 출력
+	UFUNCTION(Exec)
+	void DSCombat();
+
+	// DSWeaponTrace <0|1> : 무기 캡슐 트레이스 디버그 드로우 토글
+	UFUNCTION(Exec)
+	void DSWeaponTrace(int32 bEnabled = 1);
 };

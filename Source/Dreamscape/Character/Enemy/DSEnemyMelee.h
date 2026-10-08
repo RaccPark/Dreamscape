@@ -23,7 +23,7 @@ protected:
 	virtual void OnDeath() override;
 
 	// 일반 적은 피격 시 히트 리액션 몽타주 + 블랙보드 경직 플래그를 탄다.
-	virtual void OnDamaged(float DamageAmount) override;
+	virtual void OnDamaged(float DamageAmount, EDSDamageType DamageType) override;
 
 public:
 	virtual void Tick(float DeltaTime) override;
