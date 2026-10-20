@@ -75,6 +75,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Player Stats")
 	float GetAttackRecoveryTime(float WeaponRecoveryTime) const;
 
+	// 서브 공격 충전 속도 배수
+	// 실제 충전 시간 = ChargeTime / 본 함수 리턴 값
+	UFUNCTION(BlueprintPure, Category = "Player Stats")
+	float GetSubAttackChargeRateMultiplier() const;
+
+	// 보조 공격 발사 후 다음 행동까지의 회복 시간
+	UFUNCTION(BlueprintPure, Category = "Player Stats")
+	float GetSubAttackRecoveryTime() const;
+
 	UFUNCTION(BlueprintPure, Category = "Player Stats")
 	int32 GetUpgradePoint(EDSPlayerStatType StatType) const;
 

@@ -125,6 +125,23 @@ float UDSPlayerStatsComponent::GetAttackRecoveryTime(float WeaponRecoveryTime) c
 	return WeaponRecoveryTime / PlayerData->AttackRecoveryRateMultiplier;
 }
 
+float UDSPlayerStatsComponent::GetSubAttackChargeRateMultiplier() const
+{
+	
+	if (!PlayerData || PlayerData->SubAttackChargeRateMultiplier <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerStatsComponent] PlayerData가 지정되지 않았거나 SubAttackChargeRateMultiplier가 0 이하입니다. 기본값 1.0을 반환합니다."));
+		return 1.0f;
+	}
+
+	return PlayerData->SubAttackChargeRateMultiplier;
+}
+
+float UDSPlayerStatsComponent::GetSubAttackRecoveryTime() const
+{
+	return PlayerData ? PlayerData->SubAttackRecoveryTime : 0.0f;
+}
+
 bool UDSPlayerStatsComponent::AddUpgradePoint(EDSPlayerStatType StatType, int32 Amount)
 {
 	if (!PlayerData || Amount <= 0)
