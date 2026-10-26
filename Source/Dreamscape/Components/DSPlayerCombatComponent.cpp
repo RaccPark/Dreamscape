@@ -8,6 +8,7 @@
 #include "Weapon/DSSwordWeaponBase.h"
 #include "Weapon/Data/DSWeaponItemData.h"
 #include "Interface/DSDamageableInterface.h"
+#include "Character/Data/DSSubAbilityData.h"
 
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
@@ -130,6 +131,16 @@ float UDSPlayerCombatComponent::GetRecoveryTime() const
 	return StatsComponent ? StatsComponent->GetAttackRecoveryTime(WeaponRecovery) : WeaponRecovery;
 }
 
+float UDSPlayerCombatComponent::CalculateSubAbilityDamage(const UDSSubAbilityData* SubAbilityData) const
+{
+	if (!StatsComponent || !SubAbilityData)
+	{
+		return 0.0f;
+	}
+
+	return StatsComponent->GetAttackPower() * SubAbilityData->DamageMultiplier;
+}
+
 float UDSPlayerCombatComponent::GetComboWindowOpenTime(int32 ComboIndex) const
 {
 	float Raw = 0.0f, Latest = 0.0f;
@@ -160,7 +171,7 @@ float UDSPlayerCombatComponent::ComputeComboWindowOpenTime(int32 ComboIndex, flo
 	OutRawOpenTime = (ComboData->EffectiveFrameCounts[ArrayIndex] / ComboData->FrameRate) / PlayRate;
 
 	// 블렌드 아웃은 배속과 무관한 실제 초 단위로 트리거된다 (AnimMontage.cpp: PlayTimeToEnd <= BlendOutTime).
-	// 그래서 배속이 오르면 섹션 끝의 블렌드 아웃 구간이 창 열림 시각을 삼킬 수 있다 —
+	// 그래서 배속이 오르면 섹션 끝의 블렌드 아웃 구간이 창 열림 시각을 삼킬 수 있다
 	// 이미 Stop()된 몽타주에는 JumpToSection이 먹지 않는다. 창은 반드시 블렌드 아웃 시작 전에 열려야 한다.
 	// 섹션 찾기: 재생 중이면 현재 섹션(정확), 아니면 이름 규약으로. 1타는 이름이 달라도 0번 섹션이다.
 	int32 SectionIndex = INDEX_NONE;
@@ -233,7 +244,7 @@ void UDSPlayerCombatComponent::ProcessComboCommand()
 	}
 	else
 	{
-		// 창이 아직 안 열렸다 — 버퍼에 적재, 창이 열리는 순간 ComboCheck가 소비한다 (PDF 구현방법2 구조)
+		// 창이 아직 안 열렸다 — 버퍼에 적재, 창이 열리는 순간 ComboCheck가 소비한다
 		UE_LOG(LogTemp, Log, TEXT("[Command] ProcessComboCommand: 콤보 %d 진행 중 -> PendingComboCommand 적재"), CurrentCombo);
 		PendingComboCommand = MakeUnique<DSSwordAttackCommand>();
 	}
@@ -271,7 +282,7 @@ void UDSPlayerCombatComponent::PlayAttackMontage(UAnimInstance* AnimInstance)
 		return;
 	}
 
-	// 배속 = 무기 공격 속도 × 스탯 배수. 종전에는 1.0f로 고정되어 있었다.
+	// 배속 = 무기 공격 속도 * 스탯 배수. 종전에는 1.0f로 고정되어 있었다.
 	AnimInstance->Montage_Play(Montage, GetAttackPlayRate());
 
 	FOnMontageEnded EndDelegate;
@@ -300,7 +311,7 @@ void UDSPlayerCombatComponent::AdvanceCombo()
 		return;
 	}
 
-	// Montage_GetIsStopped는 Stop()이 불린 순간(블렌드 아웃 "시작")부터 true다 — 인스턴스가 ActiveMontagesMap에서 빠지기 때문.
+	// Montage_GetIsStopped는 Stop()이 불린 순간(블렌드 아웃 "시작")부터 true다 - 인스턴스가 ActiveMontagesMap에서 빠지기 때문.
 	// 종료 델리게이트는 블렌드 아웃이 "끝나야" 오므로, 그 사이에 창이 열리면 콤보는 살아 있는데 점프는 먹지 않는다.
 	// 이 경우 이전 인스턴스의 종료 델리게이트를 떼고 몽타주를 다시 재생한 뒤 점프한다.
 	UAnimMontage* Montage = EquippedWeaponData->AttackMontage;
@@ -333,7 +344,7 @@ void UDSPlayerCombatComponent::ComboActionEnd(UAnimMontage* TargetMontage, bool 
 {
 	ensure(CurrentCombo != 0);
 
-	// 창이 열리기도 전에 몽타주가 끝났는데 선입력이 남아 있다면 데이터 문제다 —
+	// 창이 열리기도 전에 몽타주가 끝났는데 선입력이 남아 있다면 데이터 문제다.
 	// EffectiveFrameCounts가 섹션 길이보다 크다는 뜻. 경고를 남기고 버린다.
 	if (PendingComboCommand && !bInterrupted)
 	{
@@ -351,7 +362,7 @@ void UDSPlayerCombatComponent::ComboActionEnd(UAnimMontage* TargetMontage, bool 
 		OwnerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
 
-	// 회복 시간. 이 동안 FSM은 SwordAttack 상태에 머물러 이동·구르기·공격이 전부 막힌다.
+	// 회복 시간. 이 동안 FSM은 SwordAttack 상태에 머물러 이동,구르기,공격이 전부 막힌다.
 	const float RecoveryTime = GetRecoveryTime();
 	if (RecoveryTime > 0.0f)
 	{
@@ -499,4 +510,27 @@ void UDSPlayerCombatComponent::SetDrawWeaponTrace(bool bEnabled)
 	{
 		EquippedWeapon->SetDrawTrace(bEnabled);
 	}
+}
+
+void UDSPlayerCombatComponent::ApplySubAbilityDamage(AActor* Target, const UDSSubAbilityData* SubAbilityData, const FVector& KnockbackDirection)
+{
+	IDSDamageableInterface* Damageable = Cast<IDSDamageableInterface>(Target);
+	if (!Damageable || !SubAbilityData)
+	{
+		return;
+	}
+
+	// 보조 공격은 폭발이 아니면 경직을 주지 않음.
+	// 피해 종류를 여기서 가른다.
+	const EDSDamageType DamageType = (SubAbilityData->SubAbilityType == EDSSubAbilityType::Explosion) ? EDSDamageType::Explosion : EDSDamageType::SubAttack;
+
+	// 넉백은 수평 방향만
+	FVector Direction = KnockbackDirection;
+	Direction.Z = 0.0f;
+	Direction = Direction.GetSafeNormal();
+
+	const float Damage = CalculateSubAbilityDamage(SubAbilityData);
+	Damageable->ApplyDamageWithKnockback(Damage, DamageType, Direction, KnockbackStrength);
+
+	UE_LOG(LogTemp, Log, TEXT("[UDSPlayerCombatComponent] 보조 공격 히트: %s  피해 %.2f  (%s)"), *Target->GetName(), Damage, *SubAbilityData->GetName());
 }
