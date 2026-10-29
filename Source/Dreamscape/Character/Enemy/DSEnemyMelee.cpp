@@ -54,12 +54,12 @@ void ADSEnemyMelee::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ADSEnemyMelee::OnDamaged(float DamageAmount, EDSDamageType DamageType)
+void ADSEnemyMelee::OnDamaged(const FDSDamageInfo& DamageInfo)
 {
 	// 체력 차감과 사망 판정은 UDSVitalityComponent가 이미 끝냈다.
 	// 기획서 적 문서: 보조 공격은 폭발이 아니면 경직을 주지 않는다
 	// -> 피해만 받고 리액션은 건너뛴다.
-	if (DamageType == EDSDamageType::SubAttack)
+	if (DamageInfo.Type == EDSDamageType::SubAttack)
 	{
 		return;
 	}
@@ -154,7 +154,8 @@ void ADSEnemyMelee::PerformMeleeTrace()
 				IDSDamageableInterface* DamageableActor = Cast<IDSDamageableInterface>(HitActor);
 				if (DamageableActor)
 				{
-					DamageableActor->ApplyDamage(AttackDamage, EDSDamageType::EnemyAttack);
+					// 구울 근접 공격은 넉백이 없다
+					DamageableActor->ApplyDamage(FDSDamageInfo(AttackDamage, EDSDamageType::EnemyAttack, this));
 
 					// vfx, sfx etc.
 					// ...

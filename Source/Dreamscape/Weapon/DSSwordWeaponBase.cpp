@@ -90,9 +90,11 @@ void ADSSwordWeaponBase::PerformTrace()
 	{
 		if (IDSDamageableInterface* Damageable = Cast<IDSDamageableInterface>(HitActor))
 		{
-			FVector KnockbackDirection = HitActor->GetActorLocation() - GetActorLocation();
-			KnockbackDirection.Z = 0.f;
-			Damageable->ApplyDamageWithKnockback(DamageAmount, EDSDamageType::EnemyAttack, KnockbackDirection.GetSafeNormal(), 250.f);
+			// 보스 전용 경로. 공격자는 무기가 아니라 무기를 든 보스
+			FDSDamageInfo DamageInfo(DamageAmount, EDSDamageType::EnemyAttack, GetOwner());
+			DamageInfo.SetKnockbackFrom(GetActorLocation(), HitActor, 250.f);
+
+			Damageable->ApplyDamage(DamageInfo);
 		}
 	}
 }

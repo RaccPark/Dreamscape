@@ -23,6 +23,6 @@ class DREAMSCAPE_API IDSDamageableInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void ApplyDamage(float DamageAmount, EDSDamageType DamageType) = 0;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength) = 0;
+	// 피해량·종류·공격자·넉백을 한 번에 받는다. 넉백이 없으면 KnockbackStrength가 0이다 (HasKnockback()으로 확인)
+	virtual void ApplyDamage(const FDSDamageInfo& DamageInfo) = 0;
 };

@@ -17,8 +17,8 @@ class DREAMSCAPE_API ADSBossCharacterBase : public ADSEnemyCharacterBase
 	GENERATED_BODY()
 
 public:
-	// 보스는 넉백되지 않는다. 피해만 적용하고 LaunchCharacter는 건너뛴다.
-	virtual void ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength) override;
+	// 보스는 넉백되지 않는다. 넉백을 지운 사본으로 베이스를 부른다.
+	virtual void ApplyDamage(const FDSDamageInfo& DamageInfo) override;
 
 	FOnBossLandingFinished OnBossLandingFinishedDelegate;
 };

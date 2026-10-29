@@ -483,12 +483,11 @@ void UDSPlayerCombatComponent::PerformAttackTrace()
 			continue;
 		}
 
-		// 넉백은 무기 위치에서 대상 쪽으로, 수평 방향만
-		FVector KnockbackDirection = HitActor->GetActorLocation() - EquippedWeapon->GetActorLocation();
-		KnockbackDirection.Z = 0.0f;
-		KnockbackDirection = KnockbackDirection.GetSafeNormal();
+		// 넉백은 무기 위치에서 대상 쪽으로. 수평·정규화는 SetKnockbackFrom이 한다
+		FDSDamageInfo DamageInfo(Damage, EDSDamageType::MainAttack, OwnerCharacter);
+		DamageInfo.SetKnockbackFrom(EquippedWeapon->GetActorLocation(), HitActor, KnockbackStrength);
 
-		Damageable->ApplyDamageWithKnockback(Damage, EDSDamageType::MainAttack, KnockbackDirection, KnockbackStrength);
+		Damageable->ApplyDamage(DamageInfo);
 
 		UE_LOG(LogTemp, Log, TEXT("[UDSPlayerCombatComponent] 히트: %s  피해 %.2f"), *HitActor->GetName(), Damage);
 	}
@@ -524,13 +523,13 @@ void UDSPlayerCombatComponent::ApplySubAbilityDamage(AActor* Target, const UDSSu
 	// 피해 종류를 여기서 가른다.
 	const EDSDamageType DamageType = (SubAbilityData->SubAbilityType == EDSSubAbilityType::Explosion) ? EDSDamageType::Explosion : EDSDamageType::SubAttack;
 
-	// 넉백은 수평 방향만
-	FVector Direction = KnockbackDirection;
-	Direction.Z = 0.0f;
-	Direction = Direction.GetSafeNormal();
-
 	const float Damage = CalculateSubAbilityDamage(SubAbilityData);
-	Damageable->ApplyDamageWithKnockback(Damage, DamageType, Direction, KnockbackStrength);
+
+	// 공격자는 투사체가 아니라 쏜 캐릭터. 수평·정규화는 SetKnockback이 한다
+	FDSDamageInfo DamageInfo(Damage, DamageType, OwnerCharacter);
+	DamageInfo.SetKnockback(KnockbackDirection, KnockbackStrength);
+
+	Damageable->ApplyDamage(DamageInfo);
 
 	UE_LOG(LogTemp, Log, TEXT("[UDSPlayerCombatComponent] 보조 공격 히트: %s  피해 %.2f  (%s)"), *Target->GetName(), Damage, *SubAbilityData->GetName());
 }

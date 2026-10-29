@@ -10,7 +10,8 @@
 // 체력이 바뀔 때마다. UI 갱신용
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnVitalityHealthChanged, float, NewHealth, float, MaxHealth);
 // 실제로 피해를 받았을 때(무적으로 무시된 경우는 발생하지 않는다)
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnVitalityDamaged, float, DamageAmount, EDSDamageType, DamageType, AActor*, DamageInstigator);
+// DamageInfo.Amount는 SanitizeDamage를 거친 실제 차감량이다
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVitalityDamaged, const FDSDamageInfo&, DamageInfo);
 // 경직 상태로 들어가야 할 때. 소유 캐릭터가 받아 상태 머신에 넘긴다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVitalityStaggered);
 // 체력이 0이 되었을 때
@@ -57,7 +58,7 @@ public:
 	 *         넉백은 호출자가 이 반환값을 보고 적용해야 한다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Vitality")
-	bool ApplyDamage(float DamageAmount, EDSDamageType DamageType, AActor* DamageInstigator = nullptr);
+	bool ApplyDamage(const FDSDamageInfo& DamageInfo);
 
 	UFUNCTION(BlueprintCallable, Category = "Vitality")
 	void Heal(float Amount);

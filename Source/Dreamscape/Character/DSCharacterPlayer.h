@@ -235,8 +235,7 @@ protected:
 // ==================================================
 public:
 	// Interface
-	virtual void ApplyDamage(float DamageAmount, EDSDamageType DamageType) override;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength) override;
+	virtual void ApplyDamage(const FDSDamageInfo& DamageInfo) override;
 
 protected:
 	// VitalityComponent의 이벤트를 FSM으로 넘기는 중계 지점.

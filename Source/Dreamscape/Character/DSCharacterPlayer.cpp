@@ -714,7 +714,7 @@ void ADSCharacterPlayer::RotateCharacterToMouseCursor()
 	}
 }
 
-void ADSCharacterPlayer::ApplyDamage(float DamageAmount, EDSDamageType DamageType)
+void ADSCharacterPlayer::ApplyDamage(const FDSDamageInfo& DamageInfo)
 {
 	if (!VitalityComponent)
 	{
@@ -723,21 +723,10 @@ void ADSCharacterPlayer::ApplyDamage(float DamageAmount, EDSDamageType DamageTyp
 	}
 
 	// 경직·사망 전이는 VitalityComponent의 이벤트를 통해 일어난다.
-	VitalityComponent->ApplyDamage(DamageAmount, DamageType, this);
-}
-
-void ADSCharacterPlayer::ApplyDamageWithKnockback(float DamageAmount, EDSDamageType DamageType, const FVector& KnockbackDirection, float KnockbackStrength)
-{
-	if (!VitalityComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ADSCharacterPlayer] VitalityComponent is nullptr!"));
-		return;
-	}
-
 	// 무적(구르기 등)으로 피해가 무시되었으면 넉백도 적용하지 않는다.
-	if (VitalityComponent->ApplyDamage(DamageAmount, DamageType, this))
+	if (VitalityComponent->ApplyDamage(DamageInfo) && DamageInfo.HasKnockback())
 	{
-		LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
+		LaunchCharacter(DamageInfo.KnockbackDirection * DamageInfo.KnockbackStrength, true, true);
 	}
 }
 
@@ -765,7 +754,8 @@ void ADSCharacterPlayer::DSVital()
 void ADSCharacterPlayer::DSDamage(float Amount)
 {
 	// 무적 판정과 경직/사망 전이를 그대로 타도록 실제 피해 경로를 부른다.
-	ApplyDamage(Amount, EDSDamageType::EnemyAttack);
+	// 콘솔 명령이라 공격자는 없다
+	ApplyDamage(FDSDamageInfo(Amount, EDSDamageType::EnemyAttack, nullptr));
 
 	DSVital();
 }

@@ -44,14 +44,15 @@ public:
 	// 무기를 스폰해 등 뒤 소켓에 붙인다. 기존 무기는 파괴한다.
 	void EquipWeapon(const class UDSWeaponItemData* NewWeaponData);
 
-	// 장착된 무기를 다른 소켓으로 옮긴다 (손 ↔ 등)
+	// 장착된 무기를 다른 소켓으로 옮긴다 (손 - 등)
 	void SetWeaponSocket(FName SocketName);
 
 	class ADSSwordWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
 	const class UDSWeaponItemData* GetEquippedWeaponData() const { return EquippedWeaponData; }
 
 // ==================================================
-// 파생값 — Stats * 무기 데이터
+// 파생값
+// Stats * 무기 데이터
 // ==================================================
 public:
 	// 최종 피해 = 플레이어 공격력 * 무기 배수
