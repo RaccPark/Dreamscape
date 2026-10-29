@@ -13,6 +13,7 @@
 #include "Components/PlayerStateBase/DSPlayerState_Hit.h"
 #include "Components/PlayerStateBase/DSPlayerState_SwordAttack.h"
 #include "Components/PlayerStateBase/DSPlayerState_Death.h"
+#include "Components/PlayerStateBase/DSPlayerState_SubAttack.h"
 
 // Sets default values for this component's properties
 UDSPlayerFSMComponent::UDSPlayerFSMComponent()
@@ -100,6 +101,30 @@ void UDSPlayerFSMComponent::HandleComboActionEnd()
 	if (CurrentState)
 	{
 		CurrentState->OnComboActionEnd();
+	}
+}
+
+void UDSPlayerFSMComponent::HandleSubAttackPressed()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnSubAttackPressed();
+	}
+}
+
+void UDSPlayerFSMComponent::HandleSubAttackReleased()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnSubAttackReleased();
+	}
+}
+
+void UDSPlayerFSMComponent::HandleSubAttackEnded()
+{
+	if (CurrentState)
+	{
+		CurrentState->OnSubAttackEnded();
 	}
 }
 
@@ -203,6 +228,7 @@ void UDSPlayerFSMComponent::BeginPlay()
 	CreateState<UDSPlayerState_Hit>(EPlayerStateType::EPS_Hit);
 	CreateState<UDSPlayerState_SwordAttack>(EPlayerStateType::EPS_SwordAttack);
 	CreateState<UDSPlayerState_Death>(EPlayerStateType::EPS_Death);
+	CreateState<UDSPlayerState_SubAttack>(EPlayerStateType::EPS_SubAttack);
 
 	// 초기 상태 설정
 	ChangeState(EPlayerStateType::EPS_Idle);

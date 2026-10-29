@@ -29,6 +29,11 @@ public:
 	virtual void OnHit();
 	virtual void OnSwordAttack();
 
+	virtual void OnSubAttackPressed();
+	virtual void OnSubAttackReleased();
+	virtual void OnSubAttackEnded();
+
+
 	virtual void OnComboActionEnd();
 	virtual void OnDeath();
 

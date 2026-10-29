@@ -33,8 +33,9 @@ void ADSDreamCrystal::Tick(float DeltaTime)
 
 }
 
-void ADSDreamCrystal::ApplyDamage(float DamageAmount)
+void ADSDreamCrystal::ApplyDamage(const FDSDamageInfo& DamageInfo)
 {
+	// 크리스탈은 피해량·종류·넉백과 무관하게 한 대에 부서진다
 	if (bDestroyed)
 	{
 		return;
@@ -46,11 +47,6 @@ void ADSDreamCrystal::ApplyDamage(float DamageAmount)
 	}
 
 	DestroyCrystal();
-}
-
-void ADSDreamCrystal::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
-{
-	ApplyDamage(DamageAmount);
 }
 
 void ADSDreamCrystal::DestroyCrystal()

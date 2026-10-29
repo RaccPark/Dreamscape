@@ -59,3 +59,15 @@ void UDSPlayerState_Idle::OnSwordAttack()
 
 	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_SwordAttack);
 }
+
+void UDSPlayerState_Idle::OnSubAttackPressed()
+{
+	if (!PlayerCharacter || !OwnerFSMComponent)
+	{
+		return;
+	}
+
+	// 향후 구현 필요한 부분
+	// SubAbilityComponent->CanBeginCharge()가 false면 전이하지 않음(빈 슬롯, 회복 중, 스테미나 부족)
+	OwnerFSMComponent->ChangeState(EPlayerStateType::EPS_SubAttack);
+}

@@ -31,17 +31,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = CharacterControl, Meta = (AllowPrivateAccess = "true"))
 	TMap<ECharacterControlType, class UDSCharacterControlData*> CharacterControlManager;
 
-	UPROPERTY(VisibleAnywhere, Category = "Character Stats", Meta = (AllowPrivateAccess = "true"))
-	float MaxHealth;
-
-	UPROPERTY(VisibleAnywhere, Category = "Character Stats", Meta = (AllowPrivateAccess = "true"))
-	float CurrentHealth;
-
-public:
-	void SetCurrentHealth(float NewHealth);
-	void SetMaxHealth(float NewHealth);
-	float GetCurrentHealth() const;
-	float GetMaxHealth() const;
+	// 체력은 여기 있지 않다. 플레이어는 UDSVitalityComponent가, 적 캐릭터는 각자 소유한다.
 
 protected:
 	virtual void OnDeath();

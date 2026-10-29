@@ -40,8 +40,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void ApplyDamage(float DamageAmount) override;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
+	virtual void ApplyDamage(const FDSDamageInfo& DamageInfo) override;
 
 private:
 	void DestroyCrystal();

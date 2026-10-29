@@ -19,6 +19,7 @@ enum class EPlayerStateType : uint8
 	EPS_Hit,
 	EPS_SwordAttack,
 	EPS_Death,
+	EPS_SubAttack,
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStateChanged, EPlayerStateType, NewState);
@@ -40,6 +41,11 @@ public:
 	void HandleRollEnd();
 	void HandleSwordAttackInput();
 	void HandleComboActionEnd();
+	
+	void HandleSubAttackPressed();
+	void HandleSubAttackReleased();
+	void HandleSubAttackEnded();
+
 	void HandleFall();
 	void HandleLand();
 	void HandleHit();
@@ -62,7 +68,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	UPROPERTY()
+	//UPROPERTY()
 	TObjectPtr<UDSPlayerStateBase> CurrentState;
 
 	UPROPERTY()

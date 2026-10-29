@@ -49,6 +49,10 @@ protected:
 public:
 	void BindToPlayer(class ADSCharacterPlayer* Player);
 
+	// UDSVitalityComponent::OnHealthChanged 구독용.
+	// 플레이어 체력은 정수 칸이지만 컴포넌트가 float로 들고 있어 여기서 int32로 바꾼다.
+	UFUNCTION()
+	void HandleHealthChanged(float NewHealth, float NewMaxHealth);
 
 	UFUNCTION()
 	void UpdateHealth(int32 NewHealth);

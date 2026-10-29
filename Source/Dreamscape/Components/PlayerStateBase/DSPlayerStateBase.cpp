@@ -74,6 +74,19 @@ void UDSPlayerStateBase::OnSwordAttack()
 	UE_LOG(LogTemp, Log, TEXT("Sword attack input received in state: %s"), *GetClass()->GetName());
 }
 
+void UDSPlayerStateBase::OnSubAttackPressed()
+{
+	UE_LOG(LogTemp, Log, TEXT("[UDSPlayerStateBase] Sub-attack pressed in state: %s"), *GetClass()->GetName());
+}
+
+void UDSPlayerStateBase::OnSubAttackReleased()
+{
+}
+
+void UDSPlayerStateBase::OnSubAttackEnded()
+{
+}
+
 void UDSPlayerStateBase::OnComboActionEnd()
 {
 

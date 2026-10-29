@@ -5,6 +5,7 @@
 #include "Character/DSCharacterPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/DSPlayerFSMComponent.h"
+#include "Components/DSPlayerVitalityComponent.h"
 #include "Animation/AnimInstance.h"
 
 void UDSPlayerState_Roll::Enter()
@@ -17,9 +18,15 @@ void UDSPlayerState_Roll::Enter()
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] Entering Roll state."));
 
 	//PlayerCharacter->GetCharacterMovement()->StopMovementImmediately();
-	
+
+	// 구르는 동안은 무적. 피해도 넉백도 들어가지 않는다.
+	if (UDSVitalityComponent* VitalityComponent = PlayerCharacter->GetVitalityComponent())
+	{
+		VitalityComponent->SetInvincible(true);
+	}
+
 	PlayerCharacter->PlayRollMontage();
-	
+
 }
 
 void UDSPlayerState_Roll::Update(float DeltaTime)
@@ -29,6 +36,14 @@ void UDSPlayerState_Roll::Update(float DeltaTime)
 void UDSPlayerState_Roll::Exit()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[UDSPlayerState_Roll] Exiting Roll state."));
+
+	if (PlayerCharacter)
+	{
+		if (UDSVitalityComponent* VitalityComponent = PlayerCharacter->GetVitalityComponent())
+		{
+			VitalityComponent->SetInvincible(false);
+		}
+	}
 }
 
 void UDSPlayerState_Roll::OnRollEnd()

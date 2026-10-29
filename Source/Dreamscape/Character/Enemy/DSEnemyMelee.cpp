@@ -54,15 +54,17 @@ void ADSEnemyMelee::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ADSEnemyMelee::ApplyDamage(float DamageAmount)
+void ADSEnemyMelee::OnDamaged(const FDSDamageInfo& DamageInfo)
 {
-	CurrentHealth -= DamageAmount;
-	if (CurrentHealth <= 0.0f)
+	// 체력 차감과 사망 판정은 UDSVitalityComponent가 이미 끝냈다.
+	// 기획서 적 문서: 보조 공격은 폭발이 아니면 경직을 주지 않는다
+	// -> 피해만 받고 리액션은 건너뛴다.
+	if (DamageInfo.Type == EDSDamageType::SubAttack)
 	{
-		OnDeath();
 		return;
 	}
-
+	
+	// 여기서는 히트 리액션만 처리한다.
 	if (HitReactMontage)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Playing hit react montage!"));
@@ -81,12 +83,6 @@ void ADSEnemyMelee::ApplyDamage(float DamageAmount)
 			EnemyAIController->GetBlackboardComponent()->SetValueAsBool(FName("IsHitted"), false);
 			}, 0.5f, false); // 0.5초 후에 피격 상태 해제
 	}
-}
-
-void ADSEnemyMelee::ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength)
-{
-	ApplyDamage(DamageAmount);
-	LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
 }
 
 void ADSEnemyMelee::Attack()
@@ -158,7 +154,8 @@ void ADSEnemyMelee::PerformMeleeTrace()
 				IDSDamageableInterface* DamageableActor = Cast<IDSDamageableInterface>(HitActor);
 				if (DamageableActor)
 				{
-					DamageableActor->ApplyDamage(AttackDamage);
+					// 구울 근접 공격은 넉백이 없다
+					DamageableActor->ApplyDamage(FDSDamageInfo(AttackDamage, EDSDamageType::EnemyAttack, this));
 
 					// vfx, sfx etc.
 					// ...

@@ -49,10 +49,8 @@ void ADSPlayerController::BeginPlay()
 			ADSCharacterPlayer* CharacterPlayer = Cast<ADSCharacterPlayer>(GetPawn());
 			if (CharacterPlayer && PlayerHUDWidget)
 			{
+				// BindToPlayer()가 VitalityComponent에서 현재/최대 체력을 읽어 초기화까지 처리한다.
 				PlayerHUDWidget->WBPResourceBar->BindToPlayer(CharacterPlayer);
-
-				int32 RoundedHealth = FMath::RoundToInt32(CharacterPlayer->GetCurrentHealth());
-				PlayerHUDWidget->WBPResourceBar->UpdateHealth(RoundedHealth);
 			}
 			else if (!CharacterPlayer)
 			{

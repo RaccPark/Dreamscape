@@ -5,6 +5,7 @@
 #include "Character/DSCharacterPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/DSPlayerFSMComponent.h"
+#include "Components/DSPlayerVitalityComponent.h"
 
 UDSAnimInstance::UDSAnimInstance()
 {
@@ -21,7 +22,10 @@ void UDSAnimInstance::NativeInitializeAnimation()
 	if (Owner)
 	{
 		CharacterMovementComponent = Owner->GetCharacterMovement();
-		Owner->OnDeathDelegate.AddUObject(this, &UDSAnimInstance::OnOwnerDeath);
+		if (UDSVitalityComponent* VitalityComponent = Owner->GetVitalityComponent())
+		{
+			VitalityComponent->OnDeath.AddDynamic(this, &UDSAnimInstance::OnOwnerDeath);
+		}
 		UDSPlayerFSMComponent* PlayerFSMComponent = Owner->GetPlayerFSMComponent();
 		if (PlayerFSMComponent)
 		{

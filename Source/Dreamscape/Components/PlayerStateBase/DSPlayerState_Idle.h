@@ -23,4 +23,5 @@ public:
 	virtual void OnRoll() override;
 	virtual void OnFall() override;
 	virtual void OnSwordAttack() override;
+	virtual void OnSubAttackPressed() override;
 };

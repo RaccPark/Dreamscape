@@ -4,30 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "Character/Enemy/DSEnemyCharacterBase.h"
-#include "Interface/DSDamageableInterface.h"
 #include "DSEnemyMelee.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
-class DREAMSCAPE_API ADSEnemyMelee : public ADSEnemyCharacterBase, public IDSDamageableInterface
+class DREAMSCAPE_API ADSEnemyMelee : public ADSEnemyCharacterBase
 {
 	GENERATED_BODY()
-	
+
 public:
 	ADSEnemyMelee();
-	
+
 protected:
 	virtual void BeginPlay() override;
 
 	virtual void OnDeath() override;
 
+	// 일반 적은 피격 시 히트 리액션 몽타주 + 블랙보드 경직 플래그를 탄다.
+	virtual void OnDamaged(const FDSDamageInfo& DamageInfo) override;
+
 public:
 	virtual void Tick(float DeltaTime) override;
-
-	virtual void ApplyDamage(float DamageAmount) override;
-	virtual void ApplyDamageWithKnockback(float DamageAmount, const FVector& KnockbackDirection, float KnockbackStrength) override;
 
 	virtual void Attack() override;
 	void UpdateWalkSpeed(float NewSpeed);
